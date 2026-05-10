@@ -1,0 +1,9 @@
+{
+  "desc": "Apart.kg - 吉尔吉斯斯坦房产",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}

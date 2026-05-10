@@ -1,0 +1,4 @@
+.page { padding: 32rpx; background: #ffffff; min-height: 100vh; }
+.page .title { font-size: 36rpx; font-weight: 700; }
+.page .text { font-size: 28rpx; color: #4a536a; margin: 12rpx 0 32rpx; line-height: 1.5; }
+.page button { margin-top: 16rpx; }

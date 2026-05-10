@@ -1,0 +1,29 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/detail/detail",
+    "pages/more/more"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#1aad19",
+    "navigationBarTitleText": "Apart.kg",
+    "navigationBarTextStyle": "white"
+  },
+  "tabBar": {
+    "color": "#7a7a7a",
+    "selectedColor": "#1aad19",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "房源"
+      },
+      {
+        "pagePath": "pages/more/more",
+        "text": "联系"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json"
+}

@@ -1,0 +1,637 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  AGENT
+  ADMIN
+}
+
+enum DealType {
+  RENT
+  SALE
+}
+
+enum PropertyType {
+  FLAT
+  HOUSE
+  OFFICE
+  NEWBUILD
+  ROOM
+  LAND
+  DACHA
+  PARKING
+}
+
+enum RentPeriod {
+  MONTHLY
+  DAILY
+  HOURLY
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  REJECTED
+}
+
+enum PlanType {
+  BOOST
+  AGENT_SUBSCRIPTION
+  PREMIUM_LISTING
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  MBANK
+  ELSOM
+  O_DENGI
+  DEMO
+}
+
+enum VerificationLevel {
+  NONE
+  EMAIL
+  PHONE
+  ID
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReviewRole {
+  LANDLORD
+  TENANT
+}
+
+enum ViewingStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+  STARTED
+  ENDED
+  CANCELLED
+}
+
+enum DealStatus {
+  DRAFT
+  PENDING_TENANT
+  PENDING_LANDLORD
+  SIGNED
+  ACTIVE
+  COMPLETED
+  DISPUTED
+  CANCELLED
+}
+
+enum RentPaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum EscrowStatus {
+  HELD
+  RELEASED
+  REFUNDED
+  DISPUTED
+}
+
+enum ConstructionStage {
+  PLANNED
+  FOUNDATION
+  FRAME
+  FACADE
+  INTERIOR
+  READY
+}
+
+enum ReservationStatus {
+  RESERVED
+  CONTRACTED
+  PAID
+  CANCELLED
+  EXPIRED
+}
+
+enum RoommateLooking {
+  ROOM
+  SHARE_FLAT
+}
+
+enum BuildingMemberStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  phone     String?
+  password  String?
+  googleId  String?  @unique
+  name      String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  verifiedLevel  VerificationLevel @default(NONE)
+  verifiedAt     DateTime?
+  ratingAvg      Float?
+  ratingCount    Int               @default(0)
+  wechatId       String?
+  preferredLang  String?
+
+  listings        Listing[]
+  favorites       Favorite[]
+  messagesSent    Message[] @relation("Sent")
+  messagesReceived Message[] @relation("Received")
+  payments        Payment[]
+  pushSubscriptions PushSubscription[]
+  savedSearches   SavedSearch[]
+  verifications   Verification[]
+  reviewsReceived Review[] @relation("ReviewTo")
+  reviewsSent     Review[] @relation("ReviewFrom")
+  viewingsRequested ViewingRequest[] @relation("ViewRequester")
+  viewingsAsOwner   ViewingRequest[] @relation("ViewOwner")
+  dealsAsLandlord   Deal[] @relation("DealLandlord")
+  dealsAsTenant     Deal[] @relation("DealTenant")
+  signatureCodes    SignatureCode[]
+  developerProfiles DeveloperMember[]
+  complexSubscriptions ComplexSubscription[]
+  reservations      Reservation[]
+  roommatePosts     RoommatePost[]
+  roommateLikesSent RoommateLike[] @relation("RoommateLikesFrom")
+  roommateLikesReceived RoommateLike[] @relation("RoommateLikesTo")
+  buildingReviews   BuildingReview[]
+  buildingMessages  BuildingChatMessage[]
+  buildingMemberships BuildingMember[]
+}
+
+model Listing {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  deal         DealType
+  propertyType PropertyType
+  title        String
+  district     String
+  description  String?
+  price        String
+  currency     String
+  rooms        String
+  area         String
+  floor        String
+  lat          Float
+  lng          Float
+  images       String        // JSON array of paths relative /uploads
+  videoUrl     String?
+
+  rentPeriod   RentPeriod?
+  installment  Boolean       @default(false)
+  exchange     Boolean       @default(false)
+  urgent       Boolean       @default(false)
+
+  status       ListingStatus @default(PENDING)
+  rejectReason String?
+
+  trustScore   Int           @default(50)
+  trustFlags   String?
+
+  titleI18n    String?
+  descriptionI18n String?
+
+  tourPhotos    String?
+  liveAvailable Boolean      @default(false)
+
+  complexId        String?
+  complex          Complex?         @relation(fields: [complexId], references: [id], onDelete: SetNull)
+  unitNumber       String?
+  floorPlanPath    String?
+  constructionStage ConstructionStage?
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  favorites    Favorite[]
+  messages     Message[]
+  payments     Payment[]
+  photoHashes  PhotoHash[]
+  reviews      Review[]
+  viewings     ViewingRequest[]
+  deals        Deal[]
+  reservations Reservation[]
+}
+
+model Favorite {
+  userId    String
+  listingId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, listingId])
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  senderId    String
+  sender      User     @relation("Sent", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   User     @relation("Received", fields: [recipientId], references: [id], onDelete: Cascade)
+  body        String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model Payment {
+  id            String          @id @default(cuid())
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId     String?
+  listing       Listing?        @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  provider      PaymentProvider @default(DEMO)
+  plan          PlanType
+  status        PaymentStatus   @default(PENDING)
+  amountSom     Int
+  currency      String          @default("KGS")
+  description   String
+  externalRef   String?
+  metadata      String?
+  paidAt        DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SavedSearch {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  filtersJson     String
+  notify          Boolean  @default(true)
+  lastNotifiedAt  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Verification {
+  id          String             @id @default(cuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      VerificationStatus @default(PENDING)
+  selfiePath  String
+  idDocPath   String
+  note        String?
+  decidedById String?
+  decidedAt   DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model PhotoHash {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  path      String
+  hash      String
+  hasExif   Boolean  @default(false)
+  hasGps    Boolean  @default(false)
+  width     Int?
+  height    Int?
+  createdAt DateTime @default(now())
+
+  @@index([hash])
+}
+
+model Review {
+  id          String     @id @default(cuid())
+  listingId   String?
+  listing     Listing?   @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  fromUserId  String
+  fromUser    User       @relation("ReviewFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId    String
+  toUser      User       @relation("ReviewTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  role        ReviewRole
+  rating      Int
+  text        String?
+  createdAt   DateTime   @default(now())
+}
+
+model ViewingRequest {
+  id          String        @id @default(cuid())
+  listingId   String
+  listing     Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  requesterId String
+  requester   User          @relation("ViewRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  ownerId     String
+  owner       User          @relation("ViewOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  status      ViewingStatus @default(PENDING)
+  slot        DateTime?
+  roomId      String        @unique
+  message     String?
+  ownerNote   String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Deal {
+  id              String     @id @default(cuid())
+  listingId       String?
+  listing         Listing?   @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  landlordId      String
+  landlord        User       @relation("DealLandlord", fields: [landlordId], references: [id], onDelete: Cascade)
+  tenantId        String
+  tenant          User       @relation("DealTenant", fields: [tenantId], references: [id], onDelete: Cascade)
+  type            DealType
+  status          DealStatus @default(DRAFT)
+  termsJson       String?
+  monthlyAmount   Int?
+  saleAmount      Int?
+  depositAmount   Int        @default(0)
+  currency        String     @default("KGS")
+  startDate       DateTime?
+  endDate         DateTime?
+  signedLandlordAt DateTime?
+  signedTenantAt   DateTime?
+  pdfPath         String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  rentPayments    RentPayment[]
+  escrow          Escrow?
+}
+
+model RentPayment {
+  id        String              @id @default(cuid())
+  dealId    String
+  deal      Deal                @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  dueDate   DateTime
+  amount    Int
+  currency  String              @default("KGS")
+  status    RentPaymentStatus   @default(PENDING)
+  paymentId String?
+  paidAt    DateTime?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+}
+
+model Escrow {
+  id        String       @id @default(cuid())
+  dealId    String       @unique
+  deal      Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  amount    Int
+  currency  String       @default("KGS")
+  status    EscrowStatus @default(HELD)
+  heldUntil DateTime?
+  releasedAt DateTime?
+  paymentId String?
+  notes     String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  type      String
+  payload   String?
+  url       String?
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+}
+
+model SignatureCode {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   String
+  target    String
+  code      String
+  context   String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Developer {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  logoPath     String?
+  about        String?
+  contactPhone String?
+  contactEmail String?
+  website      String?
+  verified     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  complexes    Complex[]
+  members      DeveloperMember[]
+}
+
+model DeveloperMember {
+  id          String    @id @default(cuid())
+  developerId String
+  developer   Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String    @default("OWNER")
+  createdAt   DateTime  @default(now())
+
+  @@unique([developerId, userId])
+}
+
+model Complex {
+  id            String   @id @default(cuid())
+  developerId   String
+  developer     Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  slug          String   @unique
+  name          String
+  district      String
+  address       String?
+  lat           Float?
+  lng           Float?
+  totalUnits    Int?
+  deadline      DateTime?
+  photoCover    String?
+  about         String?
+  progressPercent Int    @default(0)
+  currentStage  ConstructionStage @default(PLANNED)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  updates       ConstructionUpdate[]
+  listings      Listing[]
+  subscriptions ComplexSubscription[]
+}
+
+model ConstructionUpdate {
+  id              String            @id @default(cuid())
+  complexId       String
+  complex         Complex           @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  text            String
+  photos          String?
+  progressPercent Int?
+  stage           ConstructionStage?
+  milestone       Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+}
+
+model ComplexSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  complexId String
+  complex   Complex  @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  notify    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, complexId])
+}
+
+model RoommatePost {
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  district       String
+  budgetMin      Int
+  budgetMax      Int
+  bio            String
+  lifestyleTags  String          // JSON array of tags
+  lookingFor     RoommateLooking
+  gender         String?
+  ageMin         Int?
+  ageMax         Int?
+  photoPath      String?
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  likesSent      RoommateLike[]  @relation("RoommatePostFrom")
+  likesReceived  RoommateLike[]  @relation("RoommatePostTo")
+}
+
+model RoommateLike {
+  id             String       @id @default(cuid())
+  fromUserId     String
+  fromUser       User         @relation("RoommateLikesFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId       String
+  toUser         User         @relation("RoommateLikesTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  fromPostId     String
+  fromPost       RoommatePost @relation("RoommatePostFrom", fields: [fromPostId], references: [id], onDelete: Cascade)
+  toPostId       String
+  toPost         RoommatePost @relation("RoommatePostTo", fields: [toPostId], references: [id], onDelete: Cascade)
+  liked          Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+
+  @@unique([fromUserId, toPostId])
+}
+
+model BuildingProfile {
+  id             String                @id @default(cuid())
+  normalizedKey  String                @unique
+  address        String
+  district       String?
+  lat            Float?
+  lng            Float?
+  ratingAvg      Float?
+  ratingCount    Int                   @default(0)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  reviews        BuildingReview[]
+  messages       BuildingChatMessage[]
+  members        BuildingMember[]
+}
+
+model BuildingReview {
+  id           String          @id @default(cuid())
+  buildingId   String
+  building     BuildingProfile @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating       Int
+  pros         String?
+  cons         String?
+  livedFrom    DateTime?
+  livedTo      DateTime?
+  createdAt    DateTime        @default(now())
+}
+
+model BuildingChatMessage {
+  id           String          @id @default(cuid())
+  buildingId   String
+  building     BuildingProfile @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body         String
+  createdAt    DateTime        @default(now())
+}
+
+model BuildingMember {
+  id           String                @id @default(cuid())
+  buildingId   String
+  building     BuildingProfile       @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       BuildingMemberStatus  @default(PENDING)
+  verifiedAt   DateTime?
+  note         String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@unique([buildingId, userId])
+}
+
+model Reservation {
+  id             String            @id @default(cuid())
+  listingId      String
+  listing        Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status         ReservationStatus @default(RESERVED)
+  reservedUntil  DateTime?
+  prepayAmount   Int?
+  prepayCurrency String?
+  paymentId      String?
+  notes          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+

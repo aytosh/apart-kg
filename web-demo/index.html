@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Apartmant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header" id="appHeader">
+      <div class="header__row">
+        <span class="header__logo" id="headerTitle">Apartmant</span>
+        <div class="header__actions">
+          <button type="button" class="icon-btn" id="btnNotifications" aria-label="Уведомления">🔔</button>
+          <button type="button" class="icon-btn" id="btnProfileShortcut" aria-label="Профиль" data-goto="more">👤</button>
+        </div>
+      </div>
+      <div class="header__search-wrap" id="headerSearchWrap">
+        <div class="search">
+          <span class="search__icon" aria-hidden="true">🔍</span>
+          <input type="search" class="search__input" id="searchInput" placeholder="Район, улица, ЖК…" autocomplete="off" />
+        </div>
+      </div>
+    </header>
+
+    <!-- Главная -->
+    <section class="view view--active" id="view-home" data-view="home" aria-hidden="false">
+      <nav class="segment" role="tablist" aria-label="Тип сделки">
+        <button type="button" class="segment__btn is-active" data-deal="all" role="tab" aria-selected="true">Все</button>
+        <button type="button" class="segment__btn" data-deal="rent" role="tab">Аренда</button>
+        <button type="button" class="segment__btn" data-deal="sale" role="tab">Продажа</button>
+      </nav>
+      <div class="chips" role="group" aria-label="Тип объекта">
+        <button type="button" class="chip is-active" data-type="all">Все</button>
+        <button type="button" class="chip" data-type="flat">Квартира</button>
+        <button type="button" class="chip" data-type="house">Дом</button>
+        <button type="button" class="chip" data-type="office">Офис</button>
+        <button type="button" class="chip" data-type="new">Новостройки</button>
+      </div>
+      <div class="main">
+        <p class="results-count" id="resultsCount">0 объявлений</p>
+        <ul class="list" id="list"></ul>
+      </div>
+    </section>
+
+    <!-- Карта -->
+    <section class="view" id="view-map" data-view="map" aria-hidden="true" hidden>
+      <div class="map-hint">Метки по текущим фильтрам с главной. Нажмите на метку — откроется карточка.</div>
+      <div id="mapContainer" class="map-container"></div>
+    </section>
+
+    <!-- Разместить -->
+    <section class="view" id="view-add" data-view="add" aria-hidden="true" hidden>
+      <form class="form" id="formListing" novalidate>
+        <p class="form__intro">Данные сохраняются в браузере (демо без сервера).</p>
+        <label class="field">
+          <span class="field__label">Сделка</span>
+          <select class="field__input" name="deal" required>
+            <option value="rent">Аренда</option>
+            <option value="sale">Продажа</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">Тип объекта</span>
+          <select class="field__input" name="type" required>
+            <option value="flat">Квартира</option>
+            <option value="house">Дом</option>
+            <option value="office">Офис</option>
+            <option value="new">Новостройка</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">Заголовок</span>
+          <input class="field__input" name="title" type="text" required placeholder="Например: 2-комн., центр" maxlength="120" />
+        </label>
+        <label class="field">
+          <span class="field__label">Район / адрес</span>
+          <input class="field__input" name="district" type="text" required placeholder="Бишкек, …" maxlength="120" />
+        </label>
+        <div class="field-row">
+          <label class="field field--half">
+            <span class="field__label">Цена</span>
+            <input class="field__input" name="price" type="text" required placeholder="45 000" />
+          </label>
+          <label class="field field--half">
+            <span class="field__label">Валюта / период</span>
+            <input class="field__input" name="currency" type="text" required placeholder="сом / мес" />
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field field--half">
+            <span class="field__label">Комнаты / тип</span>
+            <input class="field__input" name="rooms" type="text" required placeholder="2 комн." />
+          </label>
+          <label class="field field--half">
+            <span class="field__label">Площадь</span>
+            <input class="field__input" name="area" type="text" required placeholder="54 м²" />
+          </label>
+        </div>
+        <label class="field">
+          <span class="field__label">Этаж / примечание</span>
+          <input class="field__input" name="floor" type="text" required placeholder="5 из 9" />
+        </label>
+        <label class="field">
+          <span class="field__label">Ссылка на фото (необязательно)</span>
+          <input class="field__input" name="image" type="url" placeholder="https://…" />
+        </label>
+        <button type="submit" class="btn btn--primary">Опубликовать</button>
+      </form>
+    </section>
+
+    <!-- Избранное -->
+    <section class="view" id="view-favorites" data-view="favorites" aria-hidden="true" hidden>
+      <div class="main">
+        <ul class="list" id="favoritesList"></ul>
+        <div class="empty" id="favoritesEmpty" hidden>
+          <p class="empty__title">Пока пусто</p>
+          <p class="empty__text">Добавьте объявления в избранное на главной или на карте.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ещё -->
+    <section class="view" id="view-more" data-view="more" aria-hidden="true" hidden>
+      <div class="more">
+        <div class="more__card">
+          <p class="more__label">Имя в демо</p>
+          <input type="text" class="field__input" id="userName" placeholder="Как к вам обращаться" maxlength="60" />
+          <button type="button" class="btn btn--secondary" id="saveName">Сохранить</button>
+        </div>
+        <div class="more__links">
+          <button type="button" class="more__link" id="btnClearData">Сбросить локальные данные</button>
+          <p class="more__note">Это веб-демо: объявления и избранное хранятся только в этом браузере.</p>
+        </div>
+      </div>
+    </section>
+
+    <nav class="tabbar" id="tabbar" aria-label="Нижнее меню">
+      <button type="button" class="tabbar__item is-active" data-tab="home" aria-current="page">
+        <span class="tabbar__icon">🏠</span>
+        <span class="tabbar__label">Главная</span>
+      </button>
+      <button type="button" class="tabbar__item" data-tab="map">
+        <span class="tabbar__icon">🗺️</span>
+        <span class="tabbar__label">Карта</span>
+      </button>
+      <button type="button" class="tabbar__item" data-tab="add">
+        <span class="tabbar__icon">➕</span>
+        <span class="tabbar__label">Разместить</span>
+      </button>
+      <button type="button" class="tabbar__item" data-tab="favorites">
+        <span class="tabbar__icon">❤️</span>
+        <span class="tabbar__label">Избранное</span>
+      </button>
+      <button type="button" class="tabbar__item" data-tab="more">
+        <span class="tabbar__icon">⋯</span>
+        <span class="tabbar__label">Ещё</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Модальное окно объявления -->
+  <div class="modal" id="modalDetail" hidden aria-modal="true" role="dialog" aria-labelledby="modalTitle">
+    <div class="modal__backdrop" data-close-modal></div>
+    <div class="modal__panel">
+      <button type="button" class="modal__close" data-close-modal aria-label="Закрыть">✕</button>
+      <div class="modal__img-wrap" id="modalImgWrap"></div>
+      <div class="modal__body">
+        <p class="card__price" id="modalPrice"></p>
+        <h2 class="modal__title" id="modalTitle"></h2>
+        <p class="card__meta modal__meta" id="modalMeta"></p>
+        <div class="modal__actions">
+          <a class="btn btn--primary btn--block" id="modalCall" href="#">Позвонить</a>
+          <button type="button" class="btn btn--secondary btn--block" id="modalChat">Написать</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>

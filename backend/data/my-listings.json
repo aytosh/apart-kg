@@ -1,0 +1,18 @@
+[
+    {
+      "title": "2-комн, от собственника",
+      "description": "Без посредников, срочно",
+      "price": "45000",
+      "district": "Бишкек",
+      "url": "https://example.com/listing-1",
+      "contactName": "Айбек"
+    },
+    {
+      "title": "Дом, от хозяина",
+      "description": "Без риелтора",
+      "price": "95000",
+      "district": "Чуй",
+      "url": "https://example.com/listing-2",
+      "contactName": "Нуржан"
+    }
+  ]

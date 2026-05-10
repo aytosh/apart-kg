@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Apart.kg —— 吉尔吉斯斯坦租房与购房，支持微信联系，认证房东，安全签约。" />
+  <meta name="theme-color" content="#1aad19" />
+  <title>Apart.kg · 吉尔吉斯斯坦房产</title>
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, "Helvetica Neue", "PingFang SC", sans-serif; margin: 0; background: #f6f7fb; color: #1a1a2a; }
+    header { background: #1aad19; color: #fff; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+    header img { width: 32px; height: 32px; }
+    header h1 { margin: 0; font-size: 1.2rem; }
+    header p { margin: 0; font-size: 0.8rem; opacity: 0.85; }
+    .toolbar { padding: 12px 20px; background: #fff; border-bottom: 1px solid #e5e7ec; display: flex; gap: 8px; flex-wrap: wrap; }
+    .toolbar input, .toolbar select { padding: 8px 10px; border: 1px solid #ccd; border-radius: 6px; font: inherit; }
+    .toolbar button { background: #1aad19; color: #fff; border: 0; padding: 8px 14px; border-radius: 6px; cursor: pointer; font: inherit; }
+    main { padding: 16px 20px 60px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .card { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; }
+    .card__img { height: 160px; background: #d6dae3 center/cover no-repeat; }
+    .card__body { padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+    .card__title { margin: 0; font-size: 1rem; font-weight: 600; }
+    .card__meta { margin: 0; font-size: 0.85rem; color: #66708a; }
+    .card__price { font-size: 1.05rem; font-weight: 700; color: #1aad19; margin: 4px 0; }
+    .card__owner { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #4a536a; }
+    .badge { background: rgba(26, 173, 25, 0.12); color: #1aad19; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+    .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 100; }
+    .modal.is-open { display: flex; }
+    .modal__box { background: #fff; border-radius: 10px; max-width: 460px; width: 90%; padding: 16px; max-height: 90vh; overflow: auto; }
+    .modal__box h2 { margin: 0 0 6px; }
+    .modal__box img.qr { width: 200px; height: 200px; display: block; margin: 12px auto; }
+    .modal__box p { margin: 4px 0; }
+    .lang-switch { margin-left: auto; }
+    .lang-switch a { color: #fff; text-decoration: none; font-size: 0.85rem; opacity: 0.85; }
+    footer { padding: 16px 20px; text-align: center; color: #66708a; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="assets/icon.svg" alt="Apart.kg" />
+    <div>
+      <h1>Apart.kg</h1>
+      <p>吉尔吉斯斯坦租房 · 购房 · 微信联系</p>
+    </div>
+    <div class="lang-switch">
+      <a href="/">RU</a> · <a href="/?lang=en">EN</a> · <strong>ZH</strong>
+    </div>
+  </header>
+  <div class="toolbar">
+    <select id="dealFilter">
+      <option value="">全部</option>
+      <option value="rent">出租</option>
+      <option value="sale">出售</option>
+    </select>
+    <input id="districtFilter" placeholder="区域，例如 比什凯克" />
+    <button id="reload">搜索</button>
+  </div>
+  <main>
+    <div class="grid" id="grid"></div>
+  </main>
+  <div class="modal" id="modal" aria-hidden="true">
+    <div class="modal__box" id="modalBox"></div>
+  </div>
+  <footer>© Apart.kg · <a href="/">完整版</a></footer>
+  <script>
+    const grid = document.getElementById("grid");
+    const modal = document.getElementById("modal");
+    const modalBox = document.getElementById("modalBox");
+
+    async function load() {
+      const params = new URLSearchParams();
+      const deal = document.getElementById("dealFilter").value;
+      const district = document.getElementById("districtFilter").value;
+      if (deal) params.set("deal", deal);
+      if (district) params.set("district", district);
+      const r = await fetch("/api/zh/listings" + (params.toString() ? "?" + params : ""));
+      const data = await r.json();
+      grid.innerHTML = (data.items || [])
+        .map(
+          (l) => `<article class="card" data-id="${l.id}">
+            <div class="card__img" style="background-image:url('${l.image || ""}')"></div>
+            <div class="card__body">
+              <p class="card__title">${l.title || ""}</p>
+              <p class="card__meta">${l.district || ""} · ${l.rooms || ""} · ${l.area || ""}</p>
+              <p class="card__price">${l.price || ""} ${l.currency || ""}</p>
+              <p class="card__owner">${l.owner.verified ? "<span class='badge'>认证房东</span>" : ""} ${l.owner.name || ""}</p>
+            </div>
+          </article>`
+        )
+        .join("");
+      grid.querySelectorAll(".card").forEach((card) => {
+        card.addEventListener("click", () => openListing(card.getAttribute("data-id")));
+      });
+    }
+
+    async function openListing(id) {
+      const r = await fetch("/api/zh/listings/" + id);
+      if (!r.ok) return;
+      const l = await r.json();
+      modalBox.innerHTML = `
+        <h2>${l.title || ""}</h2>
+        <p><strong>${l.price || ""} ${l.currency || ""}</strong></p>
+        <p>${l.district || ""} · ${l.rooms || ""} · ${l.area || ""} · ${l.floor || ""}</p>
+        <p>${l.description || ""}</p>
+        ${(l.images || []).slice(0, 3).map((src) => `<img src="${src}" style="width:100%;border-radius:8px;margin:6px 0" />`).join("")}
+        <h3>房东</h3>
+        <p>${l.owner.name || ""} ${l.owner.verified ? "<span class='badge'>认证</span>" : ""}</p>
+        ${
+          l.owner.wechatId
+            ? `<p>微信号: <strong>${l.owner.wechatId}</strong></p><img class="qr" src="${l.owner.wechatQr}" alt="WeChat QR" />`
+            : "<p style='color:#a00'>房东未填写微信号，可在主站留言</p>"
+        }
+        <h3>房源二维码</h3>
+        <img class="qr" src="${l.qr}" alt="Listing QR" />
+        <p style="text-align:center"><button onclick="document.getElementById('modal').classList.remove('is-open')">关闭</button></p>`;
+      modal.classList.add("is-open");
+    }
+
+    document.getElementById("modal").addEventListener("click", (e) => {
+      if (e.target.id === "modal") modal.classList.remove("is-open");
+    });
+    document.getElementById("reload").addEventListener("click", load);
+
+    load();
+  </script>
+</body>
+</html>

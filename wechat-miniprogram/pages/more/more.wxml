@@ -1,0 +1,6 @@
+<view class="page">
+  <view class="title">关于 Apart.kg</view>
+  <view class="text">吉尔吉斯斯坦租房与购房平台，认证房东，安全签约，支持微信联系。</view>
+  <button bindtap="openWeb" type="primary">复制完整版网址</button>
+  <button open-type="contact">联系客服</button>
+</view>

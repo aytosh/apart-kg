@@ -1,0 +1,29 @@
+<view wx:if="{{listing}}" class="detail">
+  <swiper class="gallery" indicator-dots autoplay>
+    <swiper-item wx:for="{{listing.images}}" wx:key="*this">
+      <image src="{{item}}" mode="aspectFill" />
+    </swiper-item>
+  </swiper>
+  <view class="body">
+    <view class="title">{{listing.title}}</view>
+    <view class="meta">{{listing.district}} · {{listing.rooms}} · {{listing.area}} · {{listing.floor}}</view>
+    <view class="price">{{listing.price}} {{listing.currency}}</view>
+    <view class="desc">{{listing.description}}</view>
+
+    <view class="owner">
+      <view class="title">房东</view>
+      <view>{{listing.owner.name}}<text wx:if="{{listing.owner.verified}}" class="badge">认证</text></view>
+      <view wx:if="{{listing.owner.wechatId}}" class="meta">微信号: {{listing.owner.wechatId}}</view>
+      <button wx:if="{{listing.owner.wechatId}}" type="primary" bindtap="copyWechat">复制微信号</button>
+      <image wx:if="{{wechatQrUrl}}" class="qr" src="{{wechatQrUrl}}" mode="widthFix" />
+    </view>
+
+    <view class="qr-block">
+      <view class="title">房源二维码</view>
+      <image class="qr" src="{{qrUrl}}" mode="widthFix" />
+      <view class="meta">扫码在浏览器打开完整版</view>
+    </view>
+
+    <button open-type="contact" type="primary">在线咨询客服</button>
+  </view>
+</view>

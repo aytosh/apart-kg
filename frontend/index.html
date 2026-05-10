@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Apart.kg — аренда и продажа недвижимости в Кыргызстане. Каталог, карта, избранное и чат по объявлениям." />
+  <meta name="theme-color" content="#6d28d9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Apart.kg — недвижимость Кыргызстана</title>
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/icon.svg" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header" id="appHeader">
+      <div class="header__inner">
+        <div class="header__row">
+          <div class="header__brand-line">
+            <a href="/" class="header__brand" id="brandHome" aria-label="Apart.kg — главная">
+              <img class="header__mark" src="assets/icon.svg" width="36" height="36" alt="" decoding="async" />
+              <span class="header__wordmark">
+                <span class="header__name">Apart</span><span class="header__tld">.kg</span>
+              </span>
+            </a>
+            <span class="header__page-title" id="headerPageTitle" hidden></span>
+          </div>
+          <nav class="nav-main" id="navMain" aria-label="Разделы сайта">
+            <button type="button" class="nav-main__item is-active" data-tab="home" data-i18n="nav.home">Главная</button>
+            <button type="button" class="nav-main__item" data-tab="map" data-i18n="nav.map">Карта</button>
+            <button type="button" class="nav-main__item" data-tab="newbuilds" data-i18n="nav.newbuilds">Новостройки</button>
+            <button type="button" class="nav-main__item" data-tab="roommate" data-i18n="nav.roommate">Сосед</button>
+            <button type="button" class="nav-main__item" data-tab="add" data-i18n="nav.add">Разместить</button>
+            <button type="button" class="nav-main__item" data-tab="favorites" data-i18n="nav.favorites">Избранное</button>
+            <button type="button" class="nav-main__item" data-tab="more" data-i18n="nav.more">Ещё</button>
+          </nav>
+          <div class="header__actions">
+            <select id="langSwitch" class="lang-switch" title="Язык / Language">
+              <option value="ru">RU</option>
+              <option value="kg">KG</option>
+              <option value="en">EN</option>
+              <option value="zh">中文</option>
+            </select>
+            <button type="button" class="icon-btn" id="btnThemeToggle" title="Сменить тему">🌓</button>
+            <button type="button" class="icon-btn" id="btnChatHeader" title="Сообщения">💬</button>
+            <button type="button" class="icon-btn" id="btnNotifications" aria-label="Уведомления">🔔</button>
+            <button type="button" class="icon-btn" id="btnAuthHeader" title="Вход">👤</button>
+          </div>
+        </div>
+        <div class="header__search-wrap" id="headerSearchWrap">
+          <div class="search">
+            <span class="search__icon" aria-hidden="true">🔍</span>
+            <input type="search" class="search__input" id="searchInput" placeholder="Район, улица, ЖК…" data-i18n-placeholder="search.placeholder" autocomplete="off" />
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="view view--active" id="view-home" data-view="home">
+      <nav class="segment" role="tablist">
+        <button type="button" class="segment__btn is-active" data-deal="all">Все</button>
+        <button type="button" class="segment__btn" data-deal="rent">Аренда</button>
+        <button type="button" class="segment__btn" data-deal="sale">Продажа</button>
+      </nav>
+      <div class="chips" role="group">
+        <button type="button" class="chip is-active" data-type="all">Все</button>
+        <button type="button" class="chip" data-type="flat">Квартира</button>
+        <button type="button" class="chip" data-type="house">Дом</button>
+        <button type="button" class="chip" data-type="office">Офис</button>
+        <button type="button" class="chip" data-type="new">Новостройки</button>
+      </div>
+      <div class="trust-filter">
+        <label class="trust-filter__check">
+          <input type="checkbox" id="filterVerifiedOnly" />
+          <span>Только проверенные владельцы</span>
+        </label>
+        <label class="trust-filter__check">
+          <input type="checkbox" id="filter360" />
+          <span>Есть 360°</span>
+        </label>
+        <label class="trust-filter__check">
+          <input type="checkbox" id="filterVideo" />
+          <span>Есть видео</span>
+        </label>
+        <label class="trust-filter__check">
+          <input type="checkbox" id="filterLive" />
+          <span>Доступен онлайн-показ</span>
+        </label>
+      </div>
+      <div class="main">
+        <div class="results-row">
+          <p class="results-count" id="resultsCount">…</p>
+          <button type="button" class="btn btn--ghost btn--small" id="btnSaveSearch" title="Сохранить текущие фильтры и получать push-уведомления о новых объявлениях">⭐ Сохранить поиск</button>
+        </div>
+        <ul class="list" id="list"></ul>
+      </div>
+    </section>
+
+    <section class="view" id="view-map" data-view="map" hidden>
+      <div class="map-hint">Метки по фильтрам с главной. Клик по метке — карточка.</div>
+      <div id="mapContainer" class="map-container"></div>
+    </section>
+
+    <section class="view" id="view-roommate" data-view="roommate" hidden>
+      <div class="roommate">
+        <div class="roommate__intro">
+          <h2 class="roommate__title">Сосед</h2>
+          <p class="roommate__lead">Найдите подходящего роммэйта по образу жизни. Свайпайте: ❤ — подходим, ✕ — нет. Получите push, когда совпадение взаимное.</p>
+        </div>
+        <div id="roommateMyForm" class="roommate__myform">
+          <p class="form__intro" id="roommateMyFormHint">Заполните анкету, чтобы начать поиск.</p>
+          <form class="form" id="formRoommate" novalidate>
+            <label class="field"><span class="field__label">Район</span>
+              <input class="field__input" name="district" required maxlength="80" placeholder="Бишкек, Первомайский" />
+            </label>
+            <div class="field-row">
+              <label class="field field--half"><span class="field__label">Бюджет от (KGS)</span>
+                <input class="field__input" name="budgetMin" type="number" min="0" required />
+              </label>
+              <label class="field field--half"><span class="field__label">Бюджет до</span>
+                <input class="field__input" name="budgetMax" type="number" min="0" required />
+              </label>
+            </div>
+            <label class="field"><span class="field__label">Что ищете</span>
+              <select class="field__input" name="lookingFor">
+                <option value="SHARE_FLAT">Жить вместе (квартира на двоих)</option>
+                <option value="ROOM">Снять комнату у кого-то</option>
+              </select>
+            </label>
+            <label class="field"><span class="field__label">Образ жизни (через запятую)</span>
+              <input class="field__input" name="lifestyleTags" maxlength="400" placeholder="не курю, чисто, удалённая работа, спорт" />
+            </label>
+            <label class="field"><span class="field__label">О себе</span>
+              <textarea class="field__input" name="bio" rows="3" required maxlength="1000"></textarea>
+            </label>
+            <button type="submit" class="btn btn--primary">Сохранить анкету</button>
+          </form>
+        </div>
+        <div id="roommateSwipeBox" class="roommate__swipe" hidden></div>
+        <div class="roommate__matches">
+          <div class="more__card-head">
+            <p class="more__label">Совпадения</p>
+            <button type="button" class="btn btn--ghost btn--small" id="btnRoommateRefresh">Обновить</button>
+          </div>
+          <div id="roommateMatches"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-building" data-view="building" hidden>
+      <div class="building" id="buildingDetail">
+        <button type="button" class="subheader__back" id="buildingBack" style="margin: 12px 16px;">← Назад на карту</button>
+        <div id="buildingHero"></div>
+        <div class="complex__tabs">
+          <button type="button" class="complex__tab is-active" data-building-tab="reviews">Отзывы</button>
+          <button type="button" class="complex__tab" data-building-tab="chat">Чат жильцов</button>
+        </div>
+        <div id="buildingReviews" class="complex__pane"></div>
+        <div id="buildingChat" class="complex__pane" hidden></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-newbuilds" data-view="newbuilds" hidden>
+      <div class="newbuilds">
+        <div class="newbuilds__intro">
+          <h2 class="newbuilds__title">Новостройки Кыргызстана</h2>
+          <p class="newbuilds__lead">Котлован-трекер: следите за ходом стройки и получайте push-уведомления о каждом этапе. Бронь юнита онлайн, аванс через эскроу.</p>
+        </div>
+        <div class="newbuilds__filters">
+          <label class="trust-filter__check">
+            <span>Этап стройки</span>
+            <select class="field__input" id="newbuildStage">
+              <option value="">Любой</option>
+              <option value="PLANNED">Планирование</option>
+              <option value="FOUNDATION">Фундамент</option>
+              <option value="FRAME">Каркас</option>
+              <option value="FACADE">Фасад</option>
+              <option value="INTERIOR">Отделка</option>
+              <option value="READY">Сдан</option>
+            </select>
+          </label>
+          <label class="trust-filter__check">
+            <span>Сдача в году</span>
+            <input class="field__input" type="number" id="newbuildYear" placeholder="2027" min="2020" max="2100" />
+          </label>
+        </div>
+        <ul class="newbuilds__list" id="complexList"></ul>
+        <div class="empty" id="complexEmpty" hidden>
+          <p class="empty__title">Пока нет ЖК под выбранные фильтры</p>
+          <p class="empty__text">Сбросьте фильтры или загляните позже — застройщики добавляются регулярно.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-complex" data-view="complex" hidden>
+      <div class="complex" id="complexDetail">
+        <button type="button" class="subheader__back" id="complexBack" style="margin: 12px 16px;">← К списку новостроек</button>
+        <div id="complexHero"></div>
+        <div class="complex__progress" id="complexProgress"></div>
+        <div class="complex__tabs">
+          <button type="button" class="complex__tab is-active" data-complex-tab="feed">Лента стройки</button>
+          <button type="button" class="complex__tab" data-complex-tab="units">Юниты</button>
+          <button type="button" class="complex__tab" data-complex-tab="about">О проекте</button>
+        </div>
+        <div id="complexFeed" class="complex__pane"></div>
+        <div id="complexUnits" class="complex__pane" hidden></div>
+        <div id="complexAbout" class="complex__pane" hidden></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-add" data-view="add" hidden>
+      <div id="addLoginHint" class="form__intro" hidden>Войдите, чтобы разместить объявление.</div>
+      <form class="form" id="formListing" novalidate>
+        <p class="form__intro">После отправки объявление уходит на <strong>модерацию</strong>. Загрузите до 12 фото.</p>
+        <label class="field">
+          <span class="field__label">Сделка</span>
+          <select class="field__input" name="deal" required>
+            <option value="rent">Аренда</option>
+            <option value="sale">Продажа</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">Тип объекта</span>
+          <select class="field__input" name="type" required>
+            <option value="flat">Квартира</option>
+            <option value="house">Дом</option>
+            <option value="office">Офис</option>
+            <option value="new">Новостройка</option>
+            <option value="room">Комната</option>
+            <option value="land">Участок</option>
+            <option value="dacha">Дача</option>
+            <option value="parking">Паркинг</option>
+          </select>
+        </label>
+        <label class="field" id="rentPeriodWrap">
+          <span class="field__label">Срок аренды</span>
+          <select class="field__input" name="rentPeriod">
+            <option value="monthly">Помесячно</option>
+            <option value="daily">Посуточно</option>
+            <option value="hourly">Почасово</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">Заголовок</span>
+          <input class="field__input" name="title" required maxlength="120" />
+        </label>
+        <label class="field">
+          <span class="field__label">Район / адрес</span>
+          <input class="field__input" name="district" required maxlength="120" />
+        </label>
+        <div class="field-row">
+          <label class="field field--half">
+            <span class="field__label">Цена</span>
+            <input class="field__input" name="price" required />
+          </label>
+          <label class="field field--half">
+            <span class="field__label">Валюта / период</span>
+            <input class="field__input" name="currency" required placeholder="сом / мес" />
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field field--half">
+            <span class="field__label">Комнаты / тип</span>
+            <input class="field__input" name="rooms" required />
+          </label>
+          <label class="field field--half">
+            <span class="field__label">Площадь</span>
+            <input class="field__input" name="area" required />
+          </label>
+        </div>
+        <label class="field">
+          <span class="field__label">Этаж / примечание</span>
+          <input class="field__input" name="floor" required />
+        </label>
+        <label class="field"><input type="checkbox" name="installment" /> Рассрочка</label>
+        <label class="field"><input type="checkbox" name="exchange" /> Обмен</label>
+        <label class="field"><input type="checkbox" name="urgent" /> Срочно</label>
+        <label class="field form__file">
+          <span class="field__label">Фото</span>
+          <input class="field__input" type="file" name="files" accept="image/*" multiple />
+        </label>
+        <div class="field tour-photos-wrap" id="tourPhotosWrap" hidden>
+          <span class="field__label">Тип каждого фото (выберите 360° для панорам с iPhone/Android)</span>
+          <ul class="tour-photo-list" id="tourPhotoList"></ul>
+        </div>
+        <label class="field form__file">
+          <span class="field__label">Видеообзор (mp4/webm, до 80 МБ — снимите квартиру на телефон)</span>
+          <input class="field__input" type="file" name="video" accept="video/*" capture="environment" />
+        </label>
+        <label class="field"><input type="checkbox" name="liveAvailable" /> Готов(а) проводить онлайн-показы (получать запросы по push)</label>
+        <button type="submit" class="btn btn--primary" id="btnSubmitListing">Отправить на модерацию</button>
+      </form>
+    </section>
+
+    <section class="view" id="view-favorites" data-view="favorites" hidden>
+      <div class="main">
+        <ul class="list" id="favoritesList"></ul>
+        <div class="empty" id="favoritesEmpty" hidden>
+          <p class="empty__title">Пусто</p>
+          <p class="empty__text">Войдите и добавьте объявления в избранное.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-chat" data-view="chat" hidden>
+      <div class="chat-panel" id="chatListPanel">
+        <p class="form__intro" style="padding: 0 16px">Ваши диалоги по объявлениям.</p>
+        <ul class="chat-threads" id="chatThreads"></ul>
+        <div class="empty" id="chatEmpty" hidden>
+          <p class="empty__title">Нет сообщений</p>
+          <p class="empty__text">Откройте объявление и нажмите «Написать».</p>
+        </div>
+      </div>
+      <div class="chat-panel" id="chatThreadPanel" hidden>
+        <div class="subheader">
+          <button type="button" class="subheader__back" id="chatBack">← Назад</button>
+          <span id="chatThreadTitle" class="header__logo" style="font-size: 0.9rem">Чат</span>
+        </div>
+        <div class="msg-list" id="msgList"></div>
+        <div class="chat-compose">
+          <input type="text" id="msgInput" placeholder="Сообщение…" maxlength="2000" />
+          <button type="button" class="btn btn--primary" id="msgSend" style="width: auto; margin: 0">Отпр.</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-admin" data-view="admin" hidden>
+      <p class="form__intro" style="padding: 0 16px">Модерация (только admin).</p>
+      <div class="admin-stats" id="adminStats"></div>
+      <h3 class="admin-section-title">Объявления на модерации</h3>
+      <div class="admin-list" id="adminList"></div>
+      <h3 class="admin-section-title">Заявки на верификацию</h3>
+      <div class="admin-list" id="adminVerifications"></div>
+      <h3 class="admin-section-title">Платежи</h3>
+      <div class="admin-list" id="adminPayments"></div>
+    </section>
+
+    <section class="view" id="view-more" data-view="more" hidden>
+      <div class="more">
+        <div class="more__card" id="moreUserCard">
+          <p class="more__label">Статус</p>
+          <p id="moreUserStatus" class="form__intro" style="margin: 0">Не авторизован</p>
+          <button type="button" class="btn btn--primary" id="btnOpenAuth" data-i18n="auth.login">Войти / Регистрация</button>
+          <button type="button" class="btn btn--secondary" id="btnLogout" hidden style="margin-top: 8px" data-i18n="auth.logout">Выйти</button>
+          <form id="formProfile" class="auth-form" style="padding:12px 0 0;" hidden>
+            <label class="field"><span class="field__label">WeChat ID</span>
+              <input class="field__input" name="wechatId" maxlength="64" placeholder="apart_kg_demo" />
+            </label>
+            <label class="field"><span class="field__label">Предпочитаемый язык</span>
+              <select class="field__input" name="preferredLang">
+                <option value="">—</option>
+                <option value="ru">Русский</option>
+                <option value="kg">Кыргызча</option>
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+              </select>
+            </label>
+            <button type="submit" class="btn btn--secondary">Сохранить</button>
+          </form>
+        </div>
+        <div class="more__card" id="pwaInstallCard" hidden>
+          <p class="more__label">Веб‑приложение</p>
+          <p class="form__intro" style="margin: 0 0 12px">Установите Apart.kg на главный экран — быстрый доступ без App Store и Google Play.</p>
+          <button type="button" class="btn btn--secondary btn--block" id="btnPwaInstall">Установить на экран</button>
+        </div>
+        <div class="more__card" id="verificationCard">
+          <p class="more__label">Верификация владельца</p>
+          <div id="verificationStatus" class="form__intro" style="margin: 0 0 12px">…</div>
+          <form id="formVerification" class="auth-form" style="padding: 0" enctype="multipart/form-data" hidden>
+            <label class="field">
+              <span class="field__label">Селфи (с лицом)</span>
+              <input class="field__input" type="file" name="selfie" accept="image/*" capture="user" required />
+            </label>
+            <label class="field">
+              <span class="field__label">Документ (фото паспорта/ID)</span>
+              <input class="field__input" type="file" name="idDoc" accept="image/*" capture="environment" required />
+            </label>
+            <button type="submit" class="btn btn--primary">Отправить на проверку</button>
+          </form>
+        </div>
+        <div class="more__card" id="paymentsCard">
+          <p class="more__label">Платные услуги</p>
+          <p class="form__intro" style="margin: 0 0 12px">Boost, премиум и подписки для агентств.</p>
+          <button type="button" class="btn btn--primary btn--block" id="btnLoadPlans">Показать тарифы</button>
+          <div id="plansBox" style="margin-top: 12px"></div>
+          <div id="paymentsHistory" style="margin-top: 12px"></div>
+        </div>
+        <div class="more__card" id="dealsCard">
+          <div class="more__card-head">
+            <p class="more__label">Мои сделки</p>
+            <button type="button" class="btn btn--ghost btn--small" id="btnRefreshDeals">Обновить</button>
+          </div>
+          <p class="form__intro" style="margin: 0 0 8px">Безопасная сделка через Apart.kg: PDF-договор, подпись кодом, эскроу-депозит и автоматический график платежей.</p>
+          <div id="dealsList"></div>
+        </div>
+        <div class="more__card" id="viewingsCard">
+          <div class="more__card-head">
+            <p class="more__label">Мои онлайн-показы</p>
+            <button type="button" class="btn btn--ghost btn--small" id="btnRefreshViewings">Обновить</button>
+          </div>
+          <p class="form__intro" style="margin: 0 0 8px">Заявки на видео-показы — как от вас, так и от других пользователей.</p>
+          <div id="viewingsList"></div>
+        </div>
+        <div class="more__card" id="reservationsCard">
+          <div class="more__card-head">
+            <p class="more__label">Мои брони новостроек</p>
+            <button type="button" class="btn btn--ghost btn--small" id="btnRefreshReservations">Обновить</button>
+          </div>
+          <p class="form__intro" style="margin: 0 0 8px">Брони с авансом через эскроу. Депозит держится на платформе до подписания договора долевого участия.</p>
+          <div id="reservationsList"></div>
+        </div>
+        <div class="more__card" id="complexSubsCard">
+          <div class="more__card-head">
+            <p class="more__label">Подписки на новостройки</p>
+            <button type="button" class="btn btn--ghost btn--small" id="btnRefreshComplexSubs">Обновить</button>
+          </div>
+          <p class="form__intro" style="margin: 0 0 8px">Push-уведомления о новых этапах строительства и обновлениях по ЖК.</p>
+          <div id="complexSubsList"></div>
+        </div>
+        <div class="more__card" id="savedSearchesCard">
+          <p class="more__label">Сохранённые поиски</p>
+          <p class="form__intro" style="margin: 0 0 12px">Получайте push-уведомления, как только появится новое объявление под ваши фильтры.</p>
+          <button type="button" class="btn btn--secondary btn--block" id="btnPushToggle" hidden>Включить push-уведомления</button>
+          <div id="savedSearchesList" style="margin-top: 12px"></div>
+        </div>
+        <div class="more__card" id="moreAdminCard" hidden>
+          <p class="more__label">Администрирование</p>
+          <button type="button" class="btn btn--secondary btn--block" id="btnOpenAdmin">Очередь модерации</button>
+        </div>
+        <div class="more__links">
+          <p class="more__note">API и БД на сервере. Демо: admin@demo.kg / admin123</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="site-footer__inner">
+        <p class="site-footer__copy">© <span id="footerYear"></span> Apart.kg — недвижимость Кыргызстана</p>
+        <p class="site-footer__note">Сайт и веб‑приложение (PWA): удобно на ПК, планшете и телефоне.</p>
+      </div>
+    </footer>
+
+    <nav class="tabbar" id="tabbar" aria-label="Нижнее меню (мобильные устройства)">
+      <button type="button" class="tabbar__item is-active" data-tab="home"><span class="tabbar__icon">🏠</span><span class="tabbar__label">Главная</span></button>
+      <button type="button" class="tabbar__item" data-tab="map"><span class="tabbar__icon">🗺️</span><span class="tabbar__label">Карта</span></button>
+      <button type="button" class="tabbar__item" data-tab="newbuilds"><span class="tabbar__icon">🏗️</span><span class="tabbar__label">Новострой</span></button>
+      <button type="button" class="tabbar__item" data-tab="add"><span class="tabbar__icon">➕</span><span class="tabbar__label">Разместить</span></button>
+      <button type="button" class="tabbar__item" data-tab="more"><span class="tabbar__icon">⋯</span><span class="tabbar__label">Ещё</span></button>
+    </nav>
+  </div>
+
+  <div class="modal" id="modalDetail" hidden>
+    <div class="modal__backdrop" data-close-modal></div>
+    <div class="modal__panel">
+      <button type="button" class="modal__close" data-close-modal aria-label="Закрыть">✕</button>
+      <div class="modal__img-wrap" id="modalImgWrap"></div>
+      <div class="modal__body">
+        <p class="card__price" id="modalPrice"></p>
+        <h2 class="modal__title" id="modalTitle"></h2>
+        <p class="card__meta modal__meta" id="modalMeta"></p>
+        <div class="modal__trust" id="modalTrust"></div>
+        <div class="modal__owner" id="modalOwner"></div>
+        <div class="modal__media" id="modalMedia"></div>
+        <div class="modal__actions">
+          <a class="btn btn--primary btn--block" id="modalCall" href="#">Позвонить</a>
+          <button type="button" class="btn btn--secondary btn--block" id="modalMsg">Написать</button>
+        </div>
+        <div class="modal__live-actions" id="modalLiveActions"></div>
+        <div class="modal__deal-actions" id="modalDealActions"></div>
+        <div class="modal__reviews" id="modalReviews"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalTour" hidden>
+    <div class="modal__backdrop" data-close-tour></div>
+    <div class="modal__panel modal__panel--full">
+      <button type="button" class="modal__close" data-close-tour aria-label="Закрыть">✕</button>
+      <h3 id="tourTitle" class="modal__title" style="padding: 12px 16px 4px">Панорама 360°</h3>
+      <div id="tourViewer" class="tour-viewer"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalRtc" hidden>
+    <div class="modal__backdrop" data-close-rtc></div>
+    <div class="modal__panel modal__panel--full">
+      <button type="button" class="modal__close" data-close-rtc aria-label="Закрыть">✕</button>
+      <p id="rtcStatus" class="form__intro" style="padding: 12px 16px 4px">…</p>
+      <div class="rtc-grid">
+        <div class="rtc-cell">
+          <video id="rtcRemote" autoplay playsinline></video>
+          <span class="rtc-label">Собеседник</span>
+        </div>
+        <div class="rtc-cell rtc-cell--small">
+          <video id="rtcLocal" autoplay playsinline muted></video>
+          <span class="rtc-label">Вы</span>
+        </div>
+      </div>
+      <div class="rtc-controls">
+        <button type="button" class="btn btn--secondary btn--block" id="rtcLeaveBtn">Завершить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalAuth" hidden>
+    <div class="modal__backdrop" data-close-auth></div>
+    <div class="modal__panel" style="max-height: 85vh">
+      <button type="button" class="modal__close" data-close-auth aria-label="Закрыть">✕</button>
+      <div class="modal__body">
+        <div class="auth-tabs">
+          <button type="button" class="auth-tab is-active" data-auth="login">Вход</button>
+          <button type="button" class="auth-tab" data-auth="register">Регистрация</button>
+        </div>
+        <form class="auth-form" id="formLogin">
+          <label class="field"><span class="field__label">Email</span><input class="field__input" name="email" type="email" required autocomplete="username" /></label>
+          <label class="field"><span class="field__label">Пароль</span><input class="field__input" name="password" type="password" required autocomplete="current-password" /></label>
+          <button type="submit" class="btn btn--primary">Войти</button>
+        </form>
+        <form class="auth-form" id="formRegister" hidden>
+          <label class="field"><span class="field__label">Имя</span><input class="field__input" name="name" /></label>
+          <label class="field"><span class="field__label">Email</span><input class="field__input" name="email" type="email" required /></label>
+          <label class="field"><span class="field__label">Телефон</span><input class="field__input" name="phone" /></label>
+          <label class="field"><span class="field__label">Пароль (мин. 6)</span><input class="field__input" name="password" type="password" required minlength="6" /></label>
+          <button type="submit" class="btn btn--primary">Зарегистрироваться</button>
+        </form>
+        <div class="auth-google" id="authGoogleWrap" hidden>
+          <p class="auth-google__sep">или</p>
+          <div id="googleSignInBtn" class="auth-google__btn"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="dist/app.js" type="module"></script>
+</body>
+</html>

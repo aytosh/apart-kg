@@ -1,0 +1,54 @@
+page {
+  background: #f6f7fb;
+  color: #1a1a2a;
+  font-family: -apple-system, "PingFang SC", sans-serif;
+}
+
+.list {
+  padding: 24rpx;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 12rpx;
+  margin-bottom: 24rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.06);
+}
+
+.card image {
+  width: 100%;
+  height: 320rpx;
+}
+
+.card .body {
+  padding: 16rpx 24rpx 24rpx;
+}
+
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.meta {
+  font-size: 24rpx;
+  color: #66708a;
+  margin-top: 4rpx;
+}
+
+.price {
+  font-size: 32rpx;
+  color: #1aad19;
+  font-weight: 700;
+  margin-top: 6rpx;
+}
+
+.badge {
+  display: inline-block;
+  background: rgba(26, 173, 25, 0.1);
+  color: #1aad19;
+  border-radius: 20rpx;
+  padding: 0 16rpx;
+  font-size: 22rpx;
+  margin-right: 8rpx;
+}

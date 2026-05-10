@@ -1,0 +1,22 @@
+<view class="toolbar">
+  <picker mode="selector" range="{{['全部', '出租', '出售']}}" value="0" bindchange="bindDeal">
+    <view class="picker">类型: {{deal === 'rent' ? '出租' : deal === 'sale' ? '出售' : '全部'}}</view>
+  </picker>
+  <input placeholder="区域" value="{{district}}" bindinput="bindDistrict" />
+  <button bindtap="search">搜索</button>
+</view>
+<view class="list">
+  <view wx:for="{{items}}" wx:key="id" class="card" data-id="{{item.id}}" bindtap="open">
+    <image src="{{item.image}}" mode="aspectFill" />
+    <view class="body">
+      <view class="title">{{item.title}}</view>
+      <view class="meta">{{item.district}} · {{item.rooms}} · {{item.area}}</view>
+      <view class="price">{{item.price}} {{item.currency}}</view>
+      <view class="meta">
+        <text wx:if="{{item.owner.verified}}" class="badge">认证</text>
+        <text>{{item.owner.name}}</text>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{items.length === 0 && !loading}}" class="empty">暂无房源</view>
+</view>

@@ -1,0 +1,12 @@
+{
+  "description": "Apart.kg WeChat Mini Program",
+  "miniprogramRoot": "./",
+  "appid": "REPLACE_WITH_YOUR_APPID",
+  "projectname": "apart-kg",
+  "setting": {
+    "es6": true,
+    "minified": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.0.0"
+}

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Apart.kg">
+  <defs>
+    <linearGradient id="ap" x1="8%" y1="0%" x2="92%" y2="100%">
+      <stop offset="0%" stop-color="#e9d5ff"/>
+      <stop offset="35%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#5b21b6"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="55%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#ap)"/>
+  <rect x="0" y="0" width="512" height="200" rx="112" fill="url(#shine)"/>
+  <path fill="#faf5ff" fill-opacity="0.98" d="M256 124 L408 252 V396 H340 V284 H172 V396 H104 V252 Z"/>
+  <rect x="222" y="288" width="68" height="108" rx="12" fill="#4c1d95"/>
+  <rect x="244" y="316" width="24" height="28" rx="5" fill="#7c3aed" fill-opacity="0.9"/>
+</svg>

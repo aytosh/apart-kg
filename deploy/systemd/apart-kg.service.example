@@ -1,0 +1,27 @@
+# Скопируйте в /etc/systemd/system/apart-kg.service и поправьте пути и пользователя.
+#
+# sudo cp deploy/systemd/apart-kg.service.example /etc/systemd/system/apart-kg.service
+# sudo nano /etc/systemd/system/apart-kg.service
+# sudo systemctl daemon-reload
+# sudo systemctl enable --now apart-kg
+
+[Unit]
+Description=Apart.kg API + static frontend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+WorkingDirectory=/opt/apart-kg/app/backend
+Environment=NODE_ENV=production
+EnvironmentFile=-/opt/apart-kg/app/backend/.env
+ExecStart=/usr/bin/node src/server.js
+Restart=on-failure
+RestartSec=5
+# Лимиты по желанию:
+# LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

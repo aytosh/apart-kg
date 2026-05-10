@@ -1,0 +1,21 @@
+# Dependencies (корень + фронт)
+node_modules/
+frontend/node_modules/
+
+# Сборка фронта (на сервере: npm run build)
+frontend/dist/
+
+# Backend
+backend/node_modules/
+backend/uploads/
+backend/dev.db
+backend/dev.db-journal
+backend/data/*.db
+backend/data/*.db-journal
+backend/.env
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
