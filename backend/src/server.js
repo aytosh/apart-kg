@@ -59,8 +59,21 @@ app.use(
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
         "img-src": ["'self'", "data:", "blob:", "https:"],
         "media-src": ["'self'", "blob:", "data:", "https:"],
-        "style-src": ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://cdn.jsdelivr.net"],
-        "style-src-elem": ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://cdn.jsdelivr.net"],
+        "style-src": [
+          "'self'",
+          "'unsafe-inline'",
+          "https://fonts.googleapis.com",
+          "https://unpkg.com",
+          "https://cdn.jsdelivr.net",
+        ],
+        "style-src-elem": [
+          "'self'",
+          "'unsafe-inline'",
+          "https://fonts.googleapis.com",
+          "https://unpkg.com",
+          "https://cdn.jsdelivr.net",
+        ],
+        "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
         "script-src": [
           "'self'",
           "'unsafe-inline'",
@@ -153,7 +166,12 @@ if (fs.existsSync(frontendDir)) {
   app.get("/zh", (_req, res) => {
     res.sendFile(path.join(frontendDir, "zh.html"));
   });
-  app.get(/^\/(?!api).*/, (_req, res) => {
+  // Не отдаём index.html вместо CSS/JS/картинок: иначе браузер «ломает» стили (MIME text/html).
+  const staticFileExt = /\.(css|js|mjs|map|svg|png|jpe?g|gif|webp|ico|woff2?|ttf|webmanifest|json)$/i;
+  app.get(/^\/(?!api).*/, (req, res) => {
+    if (staticFileExt.test(req.path)) {
+      return res.status(404).type("text/plain").send("Not found");
+    }
     res.sendFile(path.join(frontendDir, "index.html"));
   });
 }
