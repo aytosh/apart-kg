@@ -5,7 +5,25 @@ import { openDetail } from "./detail.js";
 import { openAuth } from "./auth.js";
 import { refreshMapMarkers } from "./map.js";
 import { trustBadgeHtml } from "./trustBadge.js";
-import { pickI18n } from "../i18n.js";
+import { pickI18n, t, getCurrentLang } from "../i18n.js";
+
+export function formatListingCount(n) {
+  const lang = getCurrentLang();
+  if (lang === "ru") {
+    return `${n} ${plural(n, "объявление", "объявления", "объявлений")}`;
+  }
+  if (lang === "en" || lang === "zh") {
+    if (n === 0) return t("home.count.0", "No listings");
+    if (n === 1) return t("home.count.1", "1 listing");
+    return t("home.count.n", "{n} listings").replace("{n}", String(n));
+  }
+  if (lang === "kg") {
+    if (n === 0) return t("home.count.0", "Жарыя жок");
+    if (n === 1) return t("home.count.1", "1 жарыя");
+    return t("home.count.n", "{n} жарыя").replace("{n}", String(n));
+  }
+  return `${n} ${plural(n, "объявление", "объявления", "объявлений")}`;
+}
 
 export function buildQuery() {
   const p = new URLSearchParams();
@@ -29,15 +47,20 @@ export async function loadListings() {
 
 export function cardHtml(it) {
   const img = pickCardImage(it);
-  const tag = it.deal === "rent" ? "Аренда" : "Продажа";
+  const tag =
+    it.deal === "rent"
+      ? t("filters.deal.rent", "Аренда")
+      : t("filters.deal.sale", "Продажа");
   const liked = it.isFavorite ? "is-liked" : "";
   const heart = it.isFavorite ? "❤️" : "🤍";
+  const tour360 = t("card.tour.360", "360°");
+  const tourVideo = t("card.tour.video", "видео");
   return `<li>
     <article class="card" data-id="${esc(it.id)}">
       <div class="card__img-wrap">
         <img class="card__img" src="${esc(img)}" alt="" loading="lazy" />
         <span class="card__badge ${it.deal === "rent" ? "card__badge--rent" : "card__badge--sale"}">${esc(tag)}</span>
-        ${it.has360 ? '<span class="tour-icon">🧭 360°</span>' : it.hasVideo ? '<span class="tour-icon">🎬 видео</span>' : ""}
+        ${it.has360 ? `<span class="tour-icon">🧭 ${esc(tour360)}</span>` : it.hasVideo ? `<span class="tour-icon">🎬 ${esc(tourVideo)}</span>` : ""}
         <button type="button" class="card__fav ${liked}" data-fav="${esc(it.id)}">${heart}</button>
       </div>
       <div class="card__body">
@@ -70,7 +93,7 @@ export function bindCards() {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       if (!state.token) {
-        toast("Войдите, чтобы добавлять в избранное");
+        toast(t("auth.needLoginFavorite", "Войдите, чтобы добавлять в избранное"));
         openAuth();
         return;
       }
@@ -98,7 +121,7 @@ export function renderHomeList() {
   const n = state.items.length;
   const counter = document.getElementById("resultsCount");
   if (counter) {
-    counter.textContent = `${n} ${plural(n, "объявление", "объявления", "объявлений")}`;
+    counter.textContent = formatListingCount(n);
   }
   list.innerHTML = state.items.map(cardHtml).join("");
   bindCards();

@@ -76,9 +76,11 @@ function bindLangSwitcher() {
     const lang = sel.value;
     localStorage.setItem("apartLang", lang);
     await loadLanguage(lang);
+    const home = await import("./views/home.js");
     if (state.view === "home") {
-      const { loadListings } = await import("./views/home.js");
-      loadListings();
+      await home.loadListings();
+    } else {
+      home.renderHomeList();
     }
   });
 }

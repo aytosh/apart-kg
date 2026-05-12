@@ -64,46 +64,46 @@
 
     <section class="view view--active" id="view-home" data-view="home">
       <nav class="segment" role="tablist">
-        <button type="button" class="segment__btn is-active" data-deal="all">Все</button>
-        <button type="button" class="segment__btn" data-deal="rent">Аренда</button>
-        <button type="button" class="segment__btn" data-deal="sale">Продажа</button>
+        <button type="button" class="segment__btn is-active" data-deal="all" data-i18n="filters.deal.all">Все</button>
+        <button type="button" class="segment__btn" data-deal="rent" data-i18n="filters.deal.rent">Аренда</button>
+        <button type="button" class="segment__btn" data-deal="sale" data-i18n="filters.deal.sale">Продажа</button>
       </nav>
       <div class="chips" role="group">
-        <button type="button" class="chip is-active" data-type="all">Все</button>
-        <button type="button" class="chip" data-type="flat">Квартира</button>
-        <button type="button" class="chip" data-type="house">Дом</button>
-        <button type="button" class="chip" data-type="office">Офис</button>
-        <button type="button" class="chip" data-type="new">Новостройки</button>
+        <button type="button" class="chip is-active" data-type="all" data-i18n="filters.type.all">Все</button>
+        <button type="button" class="chip" data-type="flat" data-i18n="filters.type.flat">Квартира</button>
+        <button type="button" class="chip" data-type="house" data-i18n="filters.type.house">Дом</button>
+        <button type="button" class="chip" data-type="office" data-i18n="filters.type.office">Офис</button>
+        <button type="button" class="chip" data-type="new" data-i18n="filters.type.new">Новостройки</button>
       </div>
       <div class="trust-filter">
         <label class="trust-filter__check">
           <input type="checkbox" id="filterVerifiedOnly" />
-          <span>Только проверенные владельцы</span>
+          <span data-i18n="filters.verified">Только проверенные владельцы</span>
         </label>
         <label class="trust-filter__check">
           <input type="checkbox" id="filter360" />
-          <span>Есть 360°</span>
+          <span data-i18n="filters.has360">Есть 360°</span>
         </label>
         <label class="trust-filter__check">
           <input type="checkbox" id="filterVideo" />
-          <span>Есть видео</span>
+          <span data-i18n="filters.video">Есть видео</span>
         </label>
         <label class="trust-filter__check">
           <input type="checkbox" id="filterLive" />
-          <span>Доступен онлайн-показ</span>
+          <span data-i18n="filters.live">Доступен онлайн-показ</span>
         </label>
       </div>
       <div class="main">
         <div class="results-row">
           <p class="results-count" id="resultsCount">…</p>
-          <button type="button" class="btn btn--ghost btn--small" id="btnSaveSearch" title="Сохранить текущие фильтры и получать push-уведомления о новых объявлениях">⭐ Сохранить поиск</button>
+          <button type="button" class="btn btn--ghost btn--small" id="btnSaveSearch" data-i18n="saved.search.save" data-i18n-title="saved.search.title" title="Сохранить текущие фильтры и получать push-уведомления о новых объявлениях">⭐ Сохранить поиск</button>
         </div>
         <ul class="list" id="list"></ul>
       </div>
     </section>
 
     <section class="view" id="view-map" data-view="map" hidden>
-      <div class="map-hint">Метки по фильтрам с главной. Клик по метке — карточка.</div>
+      <div class="map-hint" data-i18n="map.hint">Метки по фильтрам с главной. Клик по метке — карточка.</div>
       <div id="mapContainer" class="map-container"></div>
     </section>
 
@@ -346,7 +346,7 @@
         <div class="more__card" id="moreUserCard">
           <p class="more__label">Статус</p>
           <p id="moreUserStatus" class="form__intro" style="margin: 0">Не авторизован</p>
-          <button type="button" class="btn btn--primary" id="btnOpenAuth" data-i18n="auth.login">Войти / Регистрация</button>
+          <button type="button" class="btn btn--primary" id="btnOpenAuth" data-i18n="auth.loginPrompt">Войти / Регистрация</button>
           <button type="button" class="btn btn--secondary" id="btnLogout" hidden style="margin-top: 8px" data-i18n="auth.logout">Выйти</button>
           <form id="formProfile" class="auth-form" style="padding:12px 0 0;" hidden>
             <label class="field"><span class="field__label">WeChat ID</span>
@@ -441,17 +441,17 @@
 
     <footer class="site-footer" role="contentinfo">
       <div class="site-footer__inner">
-        <p class="site-footer__copy">© <span id="footerYear"></span> Apart.kg — недвижимость Кыргызстана</p>
-        <p class="site-footer__note">Сайт и веб‑приложение (PWA): удобно на ПК, планшете и телефоне.</p>
+        <p class="site-footer__copy">© <span id="footerYear"></span> <span data-i18n="footer.brand">Apart.kg — недвижимость Кыргызстана</span></p>
+        <p class="site-footer__note" data-i18n="footer.pwa">Сайт и веб‑приложение (PWA): удобно на ПК, планшете и телефоне.</p>
       </div>
     </footer>
 
     <nav class="tabbar" id="tabbar" aria-label="Нижнее меню (мобильные устройства)">
-      <button type="button" class="tabbar__item is-active" data-tab="home"><span class="tabbar__icon">🏠</span><span class="tabbar__label">Главная</span></button>
-      <button type="button" class="tabbar__item" data-tab="map"><span class="tabbar__icon">🗺️</span><span class="tabbar__label">Карта</span></button>
-      <button type="button" class="tabbar__item" data-tab="newbuilds"><span class="tabbar__icon">🏗️</span><span class="tabbar__label">Новострой</span></button>
-      <button type="button" class="tabbar__item" data-tab="add"><span class="tabbar__icon">➕</span><span class="tabbar__label">Разместить</span></button>
-      <button type="button" class="tabbar__item" data-tab="more"><span class="tabbar__icon">⋯</span><span class="tabbar__label">Ещё</span></button>
+      <button type="button" class="tabbar__item is-active" data-tab="home"><span class="tabbar__icon">🏠</span><span class="tabbar__label" data-i18n="nav.home">Главная</span></button>
+      <button type="button" class="tabbar__item" data-tab="map"><span class="tabbar__icon">🗺️</span><span class="tabbar__label" data-i18n="nav.map">Карта</span></button>
+      <button type="button" class="tabbar__item" data-tab="newbuilds"><span class="tabbar__icon">🏗️</span><span class="tabbar__label" data-i18n="nav.newbuildsShort">Новострой</span></button>
+      <button type="button" class="tabbar__item" data-tab="add"><span class="tabbar__icon">➕</span><span class="tabbar__label" data-i18n="nav.add">Разместить</span></button>
+      <button type="button" class="tabbar__item" data-tab="more"><span class="tabbar__icon">⋯</span><span class="tabbar__label" data-i18n="nav.more">Ещё</span></button>
     </nav>
   </div>
 

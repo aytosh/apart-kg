@@ -139,30 +139,65 @@ async function main() {
     {
       userId: demo.id,
       deal: "RENT",
-      propertyType: "FLAT",
-      title: "На модерации — тест",
-      district: "Бишкек",
-      price: "10 000",
+      propertyType: "ROOM",
+      title: "Комната 18 м², метро рядом",
+      district: "Бишкек, мкр. Джал",
+      description: "Светлая комната в 3-комнатной, соседи спокойные.",
+      price: "12 000",
       currency: "сом / мес",
-      rooms: "1 комн.",
-      area: "30 м²",
-      floor: "2",
-      lat: 42.87,
-      lng: 74.59,
-      images: JSON.stringify([IMG("1522708323590-d24dbb6b0267")]),
+      rooms: "Комната",
+      area: "18 м²",
+      floor: "3 из 5",
+      lat: 42.875,
+      lng: 74.598,
+      images: JSON.stringify([IMG("1522771730864-0a67f0e589bc")]),
       rentPeriod: "MONTHLY",
-      status: "PENDING",
+      status: "ACTIVE",
+    },
+    {
+      userId: demo.id,
+      deal: "SALE",
+      propertyType: "LAND",
+      title: "Участок 8 соток, коммуникации",
+      district: "Чуйская обл., с. Кара-Жыгач",
+      description: "Ровный участок, забор, въезд с асфальта.",
+      price: "185 000",
+      currency: "$",
+      rooms: "Участок",
+      area: "8 сот.",
+      floor: "—",
+      lat: 42.92,
+      lng: 74.65,
+      images: JSON.stringify([IMG("1500382017368-9319d9146715")]),
+      status: "ACTIVE",
+    },
+    {
+      userId: demo.id,
+      deal: "RENT",
+      propertyType: "FLAT",
+      title: "Студия у парка, короткая аренда",
+      district: "Бишкек, Панфилова",
+      price: "22 000",
+      currency: "сом / мес",
+      rooms: "Студия",
+      area: "32 м²",
+      floor: "2 из 4",
+      lat: 42.864,
+      lng: 74.601,
+      images: JSON.stringify([IMG("1484154218962-a197022b5858")]),
+      rentPeriod: "MONTHLY",
+      status: "ACTIVE",
     },
   ];
 
-  const count = await prisma.listing.count();
-  if (count === 0) {
+  const activeCount = await prisma.listing.count({ where: { status: "ACTIVE" } });
+  if (activeCount === 0) {
     for (const row of listingsData) {
       await prisma.listing.create({ data: row });
     }
-    console.log("Seed: созданы демо-объявления");
+    console.log(`Seed: создано ${listingsData.length} демо-объявлений (активных не было)`);
   } else {
-    console.log("Seed: объявления уже есть, пропуск");
+    console.log(`Seed: активных объявлений уже ${activeCount}, пропуск listings`);
   }
 
   const developerCount = await prisma.developer.count();
