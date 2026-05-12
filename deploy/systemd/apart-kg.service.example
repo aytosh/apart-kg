@@ -12,11 +12,12 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=deploy
-Group=deploy
-WorkingDirectory=/opt/apart-kg/app/backend
+# Пользователь должен существовать на сервере (часто ubuntu). Не оставляйте deploy, если такого user нет.
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/apart-kg/apart-kg/backend
 Environment=NODE_ENV=production
-EnvironmentFile=-/opt/apart-kg/app/backend/.env
+EnvironmentFile=-/opt/apart-kg/apart-kg/backend/.env
 ExecStart=/usr/bin/node src/server.js
 Restart=on-failure
 RestartSec=5
