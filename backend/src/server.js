@@ -51,12 +51,18 @@ const clientOrigin =
   process.env.CLIENT_ORIGIN ||
   "http://localhost:3000,http://127.0.0.1:3000,http://127.0.0.1:5500,http://localhost:5500";
 
+// Helmet по умолчанию включает upgrade-insecure-requests — браузер тогда грузит
+// /styles.css и /assets/* только по HTTPS. На http://IP:3000 стили и иконка пропадают.
+const cspDirectives = { ...helmet.contentSecurityPolicy.getDefaultDirectives() };
+delete cspDirectives["upgrade-insecure-requests"];
+
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
     contentSecurityPolicy: {
+      useDefaults: false,
       directives: {
-        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        ...cspDirectives,
         "img-src": ["'self'", "data:", "blob:", "https:"],
         "media-src": ["'self'", "blob:", "data:", "https:"],
         "style-src": [
