@@ -20,12 +20,14 @@ let deferredInstallPrompt = null;
 export function updateMoreUI() {
   const st = document.getElementById("moreUserStatus");
   const btnLogout = document.getElementById("btnLogout");
+  const btnOpenAuth = document.getElementById("btnOpenAuth");
   const adminCard = document.getElementById("moreAdminCard");
   const profileForm = document.getElementById("formProfile");
   const agencyCard = document.getElementById("agencyProfileCard");
   if (state.user) {
     if (st) st.textContent = `${state.user.email} (${state.user.role})`;
     if (btnLogout) btnLogout.hidden = false;
+    if (btnOpenAuth) btnOpenAuth.hidden = true;
     if (adminCard) adminCard.hidden = state.user.role !== "ADMIN" && state.user.role !== "MODERATOR";
     if (profileForm) {
       profileForm.hidden = false;
@@ -56,6 +58,7 @@ export function updateMoreUI() {
   } else {
     if (st) st.textContent = "Не авторизован";
     if (btnLogout) btnLogout.hidden = true;
+    if (btnOpenAuth) btnOpenAuth.hidden = false;
     if (adminCard) adminCard.hidden = true;
     if (profileForm) profileForm.hidden = true;
     if (agencyCard) agencyCard.hidden = true;

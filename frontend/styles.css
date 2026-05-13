@@ -1558,9 +1558,9 @@ body[data-theme="dark"] .rent-row--ok {
 }
 
 .map-container {
-  flex: 1;
-  min-height: 280px;
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 60vh;
+  height: calc(100dvh - 220px);
   margin: 0 12px 88px;
   border-radius: var(--radius);
   overflow: hidden;
@@ -1634,6 +1634,39 @@ body[data-theme="dark"] .rent-row--ok {
 .field__input:focus {
   outline: none;
   border-color: rgba(var(--accent-rgb), 0.55);
+}
+
+/* Стилизованный file-input — кнопка вместо стандартной системной */
+.field__input[type="file"] {
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.field__input[type="file"]::file-selector-button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  padding: 10px 16px;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2, var(--accent)));
+  color: #fff;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 12px;
+  transition: filter 0.18s ease, transform 0.05s ease;
+}
+
+.field__input[type="file"]::file-selector-button:hover {
+  filter: brightness(1.08);
+}
+
+.field__input[type="file"]::file-selector-button:active {
+  transform: translateY(1px);
 }
 
 .field-row {

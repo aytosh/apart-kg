@@ -415,7 +415,10 @@ router.post(
         installment: !!b.installment,
         exchange: !!b.exchange,
         urgent: !!b.urgent,
-        status: "PENDING",
+        status:
+          req.user.role === "ADMIN" || req.user.role === "MODERATOR"
+            ? "ACTIVE"
+            : "PENDING",
         complexId: complexConnect,
         unitNumber: b.unitNumber || null,
         floorPlanPath: b.floorPlanPath || null,
