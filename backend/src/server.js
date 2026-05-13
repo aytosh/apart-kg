@@ -204,6 +204,19 @@ const frontendDistDir = path.join(frontendDir, "dist");
 if (fs.existsSync(frontendDistDir)) {
   app.use("/dist", express.static(frontendDistDir));
 }
+
+// Cache-bust для app.js / styles.css: к ним приклеивается ?v=<mtime>,
+// чтобы после ребилда браузер скачивал свежее, а не отдавал старое из кеша.
+function assetVersion() {
+  try {
+    const appStat = fs.statSync(path.join(frontendDistDir, "app.js"));
+    const cssStat = fs.statSync(path.join(frontendDir, "styles.css"));
+    return String(Math.max(appStat.mtimeMs, cssStat.mtimeMs));
+  } catch {
+    return String(Date.now());
+  }
+}
+
 if (fs.existsSync(frontendDir)) {
   app.use(express.static(frontendDir));
   app.get("/zh", (_req, res) => {
@@ -211,11 +224,23 @@ if (fs.existsSync(frontendDir)) {
   });
   // Не отдаём index.html вместо CSS/JS/картинок: иначе браузер «ломает» стили (MIME text/html).
   const staticFileExt = /\.(css|js|mjs|map|svg|png|jpe?g|gif|webp|ico|woff2?|ttf|webmanifest|json)$/i;
+  const indexPath = path.join(frontendDir, "index.html");
   app.get(/^\/(?!api).*/, (req, res) => {
     if (staticFileExt.test(req.path)) {
       return res.status(404).type("text/plain").send("Not found");
     }
-    res.sendFile(path.join(frontendDir, "index.html"));
+    let html;
+    try {
+      html = fs.readFileSync(indexPath, "utf-8");
+      const v = assetVersion();
+      html = html
+        .replace(/(href=["'])styles\.css(["'])/g, `$1styles.css?v=${v}$2`)
+        .replace(/(src=["'])dist\/app\.js(["'])/g, `$1dist/app.js?v=${v}$2`);
+    } catch {
+      return res.sendFile(indexPath);
+    }
+    res.set("Cache-Control", "no-cache");
+    res.type("html").send(html);
   });
 }
 
