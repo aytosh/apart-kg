@@ -1,12 +1,24 @@
-import { state, setAppConfig } from "./state.js";
+import { state, setAppConfig, getCurrentCurrency, setCurrentCurrency } from "./state.js";
 import { THEME_KEY } from "./constants.js";
 import { applyTheme, toggleTheme } from "./utils.js";
 import { api, refreshUser } from "./api.js";
 import { setView, bindRouterEvents } from "./router.js";
 import { loadListings, bindHomeFilters } from "./views/home.js";
-import { bindDetailActions, closeDetail } from "./views/detail.js";
+import { loadFavorites } from "./views/favorites.js";
+import { bindHomeSectionsActions } from "./views/homeSections.js";
+import { bindAgenciesView } from "./views/agencies.js";
+import { bindCallbackModal, bindCallbackButton, bindCallbackTabs } from "./views/callbacks.js";
+import { bindDetailActions, closeDetail, openDetail } from "./views/detail.js";
 import { bindChatEvents } from "./views/chat.js";
-import { bindAuthForms, ensureRecaptcha, initGoogleSignIn, openAuth, closeAuth } from "./views/auth.js";
+import {
+  bindAuthForms,
+  ensureRecaptcha,
+  initGoogleSignIn,
+  initFacebookSdk,
+  openAuth,
+  closeAuth,
+  openAuthResetFromUrl,
+} from "./views/auth.js";
 import { bindListingForm } from "./views/listingForm.js";
 import { bindMoreView, updateMoreUI } from "./views/more.js";
 import { bindTour } from "./views/tour.js";
@@ -68,6 +80,22 @@ function pickInitialLang() {
   return "ru";
 }
 
+async function refreshCurrentViewAfterUiChange() {
+  const home = await import("./views/home.js");
+  if (state.view === "home") {
+    home.renderHomeList();
+  } else {
+    home.renderHomeList();
+  }
+  if (state.view === "favorites") {
+    await loadFavorites();
+  }
+  const modalDetail = document.getElementById("modalDetail");
+  if (modalDetail && !modalDetail.hidden && state.detail?.id) {
+    void openDetail(state.detail);
+  }
+}
+
 function bindLangSwitcher() {
   const sel = document.getElementById("langSwitch");
   if (!sel) return;
@@ -82,6 +110,23 @@ function bindLangSwitcher() {
     } else {
       home.renderHomeList();
     }
+    if (state.view === "favorites") {
+      await loadFavorites();
+    }
+    const modalDetail = document.getElementById("modalDetail");
+    if (modalDetail && !modalDetail.hidden && state.detail?.id) {
+      void openDetail(state.detail);
+    }
+  });
+}
+
+function bindCurrencySwitcher() {
+  const sel = document.getElementById("currencySwitch");
+  if (!sel) return;
+  sel.value = getCurrentCurrency();
+  sel.addEventListener("change", () => {
+    setCurrentCurrency(sel.value);
+    void refreshCurrentViewAfterUiChange();
   });
 }
 
@@ -95,12 +140,22 @@ async function boot() {
   await loadLanguage(pickInitialLang());
   await ensureRecaptcha();
   await initGoogleSignIn();
+  await initFacebookSdk();
 
   bindRouterEvents();
   bindHomeFilters();
+  bindHomeSectionsActions();
+  bindAgenciesView();
+  bindCallbackModal();
+  bindCallbackButton();
+  bindCallbackTabs();
   bindDetailActions();
   bindChatEvents();
   bindAuthForms();
+  const bootUrl = new URL(window.location.href);
+  const resetTok = bootUrl.searchParams.get("resetToken");
+  if (resetTok) openAuthResetFromUrl(resetTok);
+
   bindListingForm();
   bindMoreView();
   bindTour();
@@ -110,6 +165,7 @@ async function boot() {
   bindRoommate();
   bindBuilding();
   bindLangSwitcher();
+  bindCurrencySwitcher();
   bindGlobalShortcuts();
 
   await refreshUser();

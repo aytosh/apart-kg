@@ -1,49 +1,51 @@
 import { Router } from "express";
 import { prisma } from "../prisma.js";
 import { authRequired } from "../middleware/auth.js";
+import { listingToPublic } from "../services/listingPublic.js";
+import { resolveListingLang } from "../utils/listingLang.js";
 
 const router = Router();
 
-import { parseImages, imgUrl } from "../utils/images.js";
-
-function toItem(listing, baseUrl) {
-  const imgs = parseImages(listing.images).map((p) => imgUrl(p, baseUrl));
-  return {
-    id: listing.id,
-    userId: listing.userId,
-    deal: listing.deal === "RENT" ? "rent" : "sale",
-    type: listing.propertyType === "NEWBUILD" ? "new" : listing.propertyType.toLowerCase(),
-    title: listing.title,
-    district: listing.district,
-    price: listing.price,
-    currency: listing.currency,
-    rooms: listing.rooms,
-    area: listing.area,
-    floor: listing.floor,
-    lat: listing.lat,
-    lng: listing.lng,
-    images: imgs,
-    image: imgs[0] || null,
-    tag: listing.deal === "RENT" ? "Аренда" : "Продажа",
-    status: listing.status.toLowerCase(),
-    installment: listing.installment,
-    exchange: listing.exchange,
-    urgent: listing.urgent,
-    isFavorite: true,
-  };
-}
-
 router.get("/", authRequired, async (req, res) => {
   const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const lang = resolveListingLang(req.query.lang);
   const favs = await prisma.favorite.findMany({
     where: { userId: req.user.id },
-    include: { listing: true },
+    include: {
+      listing: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              verifiedLevel: true,
+              ratingAvg: true,
+              ratingCount: true,
+              wechatId: true,
+              isAgency: true,
+              agencyName: true,
+              agencySlug: true,
+              agencyLogo: true,
+            },
+          },
+          complex: {
+            include: {
+              developer: { select: { id: true, slug: true, name: true, verified: true } },
+            },
+          },
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
   const items = favs
     .map((f) => f.listing)
     .filter((l) => l.status === "ACTIVE")
-    .map((l) => ({ ...toItem(l, baseUrl), isFavorite: true }));
+    .map((l) => ({
+      ...listingToPublic(l, baseUrl, { lang }),
+      isFavorite: true,
+    }));
   res.json({ items });
 });
 

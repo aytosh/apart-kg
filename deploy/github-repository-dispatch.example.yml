@@ -1,0 +1,24 @@
+# Пример workflow: вызывается из админки Apart.kg (POST /api/admin/deploy)
+# через GitHub API repository_dispatch. Скопируйте в репозиторий как
+# .github/workflows/deploy-from-admin.yml и настройте секреты на сервере:
+#   DEPLOY_WEBHOOK_URL=https://api.github.com/repos/<ORG>/<REPO>/dispatches
+#   DEPLOY_WEBHOOK_SECRET=<classic PAT с правом repo> или fine-grained с contents+metadata
+#
+# В теле запроса бэкенд шлёт по умолчанию:
+#   { "event_type": "apart-kg-deploy", "client_payload": { "source": "admin-panel", "at": "..." } }
+
+name: Deploy from admin panel
+
+on:
+  repository_dispatch:
+    types: [apart-kg-deploy]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "client_payload=${{ toJson(github.event.client_payload) }}"
+          echo "Замените этот шаг на ssh/rsync, Docker build, или вызов вашего CI."

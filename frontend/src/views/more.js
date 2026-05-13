@@ -10,7 +10,10 @@ import { bindDeals, loadDeals } from "./deals.js";
 import { loadReservations } from "./reservations.js";
 import { isPushSupported, ensurePushSubscription, isPushSubscribed } from "../push.js";
 import { api, refreshUser } from "../api.js";
-import { loadLanguage } from "../i18n.js";
+import { loadLanguage, t } from "../i18n.js";
+import { openAgency } from "./agencies.js";
+import { loadCallbacks, showCallbacksCard } from "./callbacks.js";
+import { loadPromoView, showPromoCard } from "./promo.js";
 
 let deferredInstallPrompt = null;
 
@@ -19,20 +22,45 @@ export function updateMoreUI() {
   const btnLogout = document.getElementById("btnLogout");
   const adminCard = document.getElementById("moreAdminCard");
   const profileForm = document.getElementById("formProfile");
+  const agencyCard = document.getElementById("agencyProfileCard");
   if (state.user) {
     if (st) st.textContent = `${state.user.email} (${state.user.role})`;
     if (btnLogout) btnLogout.hidden = false;
-    if (adminCard) adminCard.hidden = state.user.role !== "ADMIN";
+    if (adminCard) adminCard.hidden = state.user.role !== "ADMIN" && state.user.role !== "MODERATOR";
     if (profileForm) {
       profileForm.hidden = false;
       profileForm.elements.wechatId.value = state.user.wechatId || "";
       profileForm.elements.preferredLang.value = state.user.preferredLang || "";
+    }
+    showCallbacksCard(true);
+    showPromoCard(true);
+    if (agencyCard) {
+      agencyCard.hidden = false;
+      const f = document.getElementById("formAgency");
+      const fs = document.getElementById("agencyFieldset");
+      const cb = document.getElementById("agencyIsAgency");
+      if (f && cb && fs) {
+        cb.checked = !!state.user.isAgency;
+        fs.disabled = !cb.checked;
+        f.elements.agencyName.value = state.user.agencyName || "";
+        f.elements.agencySlug.value = state.user.agencySlug || "";
+        f.elements.agencyCity.value = state.user.agencyCity || "";
+        f.elements.agencyLogo.value = state.user.agencyLogo || "";
+        f.elements.agencyDescription.value = state.user.agencyDescription || "";
+      }
+      const openMine = document.getElementById("btnAgencyOpenMine");
+      if (openMine) {
+        openMine.hidden = !(state.user.isAgency && state.user.agencySlug);
+      }
     }
   } else {
     if (st) st.textContent = "Не авторизован";
     if (btnLogout) btnLogout.hidden = true;
     if (adminCard) adminCard.hidden = true;
     if (profileForm) profileForm.hidden = true;
+    if (agencyCard) agencyCard.hidden = true;
+    showCallbacksCard(false);
+    showPromoCard(false);
   }
   updatePushButton();
 }
@@ -91,6 +119,8 @@ export function bindMoreView() {
   document.getElementById("btnOpenAuth")?.addEventListener("click", openAuth);
   document.getElementById("btnLogout")?.addEventListener("click", logout);
   document.getElementById("btnOpenAdmin")?.addEventListener("click", () => setView("admin"));
+  document.getElementById("btnGoAgencies")?.addEventListener("click", () => setView("agencies"));
+  document.getElementById("btnGoNewbuilds")?.addEventListener("click", () => setView("newbuilds"));
   document.getElementById("btnLoadPlans")?.addEventListener("click", loadPlansAndPayments);
 
   const pushBtn = document.getElementById("btnPushToggle");
@@ -122,6 +152,49 @@ export function bindMoreView() {
   bindVerification();
   bindViewing();
   bindDeals();
+
+  const agencyForm = document.getElementById("formAgency");
+  const agencyCheckbox = document.getElementById("agencyIsAgency");
+  const agencyFieldset = document.getElementById("agencyFieldset");
+  if (agencyCheckbox && agencyFieldset) {
+    agencyCheckbox.addEventListener("change", () => {
+      agencyFieldset.disabled = !agencyCheckbox.checked;
+    });
+  }
+  if (agencyForm) {
+    agencyForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!state.token) return;
+      const fd = new FormData(agencyForm);
+      const body = {
+        isAgency: agencyCheckbox?.checked === true,
+        agencyName: String(fd.get("agencyName") || "").trim(),
+        agencySlug: String(fd.get("agencySlug") || "").trim(),
+        agencyCity: String(fd.get("agencyCity") || "").trim(),
+        agencyLogo: String(fd.get("agencyLogo") || "").trim(),
+        agencyDescription: String(fd.get("agencyDescription") || "").trim(),
+      };
+      if (body.isAgency && !body.agencyName) {
+        toast(t("agencyForm.needName", "Укажите название агентства"));
+        return;
+      }
+      try {
+        const updated = await api("/auth/me", { method: "PATCH", body });
+        state.user = { ...state.user, ...updated };
+        updateMoreUI();
+        toast(
+          body.isAgency
+            ? t("agencyForm.saved", "Профиль агентства сохранён")
+            : t("agencyForm.disabled", "Профиль агентства отключён")
+        );
+      } catch (err) {
+        toast(err.message);
+      }
+    });
+  }
+  document.getElementById("btnAgencyOpenMine")?.addEventListener("click", () => {
+    if (state.user?.agencySlug) openAgency(state.user.agencySlug);
+  });
 
   document.getElementById("formProfile")?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -155,5 +228,9 @@ export async function loadMoreView() {
   await refreshViewings();
   await loadDeals();
   await loadReservations();
+  if (state.token) {
+    await loadCallbacks();
+    await loadPromoView();
+  }
   updatePushButton();
 }

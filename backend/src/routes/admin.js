@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { body, validationResult } from "express-validator";
 import { prisma } from "../prisma.js";
-import { authRequired, requireAdmin } from "../middleware/auth.js";
+import { authRequired, requireModerator, requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
-router.use(authRequired, requireAdmin);
+router.use(authRequired, requireModerator);
 
 router.get("/dashboard", async (_req, res) => {
   const [users, listingsAll, listingsPending, listingsActive, payments, paidSum] = await Promise.all([
@@ -151,5 +151,40 @@ router.post(
     res.json({ ok: true });
   }
 );
+
+router.post("/deploy", requireAdmin, async (req, res) => {
+  const url = process.env.DEPLOY_WEBHOOK_URL;
+  if (!url) {
+    return res.status(503).json({ error: "DEPLOY_WEBHOOK_URL не задан. Настройте GitHub Actions repository_dispatch." });
+  }
+  const secret = process.env.DEPLOY_WEBHOOK_SECRET || "";
+  const headers = { "Content-Type": "application/json", Accept: "application/vnd.github+json" };
+  if (secret) headers.Authorization = `Bearer ${secret}`;
+  const ghBody = {
+    event_type: req.body?.eventType || "apart-kg-deploy",
+    client_payload: req.body?.payload || { source: "admin-panel", at: new Date().toISOString() },
+  };
+  try {
+    const r = await fetch(url, { method: "POST", headers, body: JSON.stringify(ghBody) });
+    const text = await r.text();
+    if (!r.ok) {
+      return res.status(502).json({
+        error: "Вебхук вернул ошибку",
+        status: r.status,
+        detail: text.slice(0, 800),
+      });
+    }
+    res.json({ ok: true, message: "Запрос на деплой отправлен (проверьте Actions на GitHub)." });
+  } catch (e) {
+    res.status(500).json({ error: e?.message || "Не удалось вызвать вебхук" });
+  }
+});
+
+router.get("/deploy-status", requireAdmin, (_req, res) => {
+  res.json({
+    webhookConfigured: Boolean(process.env.DEPLOY_WEBHOOK_URL),
+    hint: "URL обычно: https://api.github.com/repos/OWNER/REPO/dispatches с PAT в DEPLOY_WEBHOOK_SECRET",
+  });
+});
 
 export default router;

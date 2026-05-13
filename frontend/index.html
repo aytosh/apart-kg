@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="description" content="Apart.kg — аренда и продажа недвижимости в Кыргызстане. Каталог, карта, избранное и чат по объявлениям." />
-  <meta name="theme-color" content="#6d28d9" />
+  <meta name="theme-color" content="#0f9c8c" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Apart.kg — недвижимость Кыргызстана</title>
@@ -13,7 +13,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -41,11 +41,18 @@
             <button type="button" class="nav-main__item" data-tab="more" data-i18n="nav.more">Ещё</button>
           </nav>
           <div class="header__actions">
-            <select id="langSwitch" class="lang-switch" title="Язык / Language">
+            <select id="langSwitch" class="lang-switch" title="Язык / Language" aria-label="Язык / Language">
               <option value="ru">RU</option>
               <option value="kg">KG</option>
               <option value="en">EN</option>
               <option value="zh">中文</option>
+            </select>
+            <select id="currencySwitch" class="lang-switch lang-switch--currency" title="Валюта / Currency" aria-label="Валюта / Currency" data-i18n-title="currency.title.set">
+              <option value="KGS">сом</option>
+              <option value="USD">$</option>
+              <option value="EUR">€</option>
+              <option value="CNY">¥</option>
+              <option value="RUB">₽</option>
             </select>
             <button type="button" class="icon-btn" id="btnThemeToggle" title="Сменить тему">🌓</button>
             <button type="button" class="icon-btn" id="btnChatHeader" title="Сообщения">💬</button>
@@ -68,12 +75,22 @@
         <button type="button" class="segment__btn" data-deal="rent" data-i18n="filters.deal.rent">Аренда</button>
         <button type="button" class="segment__btn" data-deal="sale" data-i18n="filters.deal.sale">Продажа</button>
       </nav>
-      <div class="chips" role="group">
+      <div class="chips" role="group" aria-label="Тип недвижимости">
         <button type="button" class="chip is-active" data-type="all" data-i18n="filters.type.all">Все</button>
         <button type="button" class="chip" data-type="flat" data-i18n="filters.type.flat">Квартира</button>
         <button type="button" class="chip" data-type="house" data-i18n="filters.type.house">Дом</button>
         <button type="button" class="chip" data-type="office" data-i18n="filters.type.office">Офис</button>
         <button type="button" class="chip" data-type="new" data-i18n="filters.type.new">Новостройки</button>
+      </div>
+      <div class="chips chips--rooms" role="group" id="roomsChips" aria-label="Количество комнат">
+        <button type="button" class="chip is-active" data-rooms="all" data-i18n="filters.rooms.all">Любое</button>
+        <button type="button" class="chip" data-rooms="studio" data-i18n="filters.rooms.studio">Студия</button>
+        <button type="button" class="chip" data-rooms="1">1</button>
+        <button type="button" class="chip" data-rooms="2">2</button>
+        <button type="button" class="chip" data-rooms="3">3</button>
+        <button type="button" class="chip" data-rooms="4">4</button>
+        <button type="button" class="chip" data-rooms="5plus">5+</button>
+        <button type="button" class="chip" data-rooms="free" data-i18n="filters.rooms.free">Свободная</button>
       </div>
       <div class="trust-filter">
         <label class="trust-filter__check">
@@ -94,9 +111,41 @@
         </label>
       </div>
       <div class="main">
+        <section class="home-section" id="homeSaleSection" hidden>
+          <div class="home-section__head">
+            <h2 class="home-section__title" data-i18n="home.section.sale">Продажа</h2>
+            <button type="button" class="link-btn" id="homeSaleMore" data-i18n="home.section.all">Все объявления</button>
+          </div>
+          <ul class="home-rail" id="homeSaleList"></ul>
+        </section>
+        <section class="home-section" id="homeRentSection" hidden>
+          <div class="home-section__head">
+            <h2 class="home-section__title" data-i18n="home.section.rent">Аренда</h2>
+            <button type="button" class="link-btn" id="homeRentMore" data-i18n="home.section.all">Все объявления</button>
+          </div>
+          <ul class="home-rail" id="homeRentList"></ul>
+        </section>
+        <section class="home-section" id="homeNewbuildsSection" hidden>
+          <div class="home-section__head">
+            <h2 class="home-section__title" data-i18n="home.section.newbuilds">Новостройки</h2>
+            <button type="button" class="link-btn" id="homeNewbuildsMore" data-i18n="home.section.allBuilds">Все ЖК</button>
+          </div>
+          <ul class="home-rail home-rail--complex" id="homeNewbuildsList"></ul>
+        </section>
+        <section class="home-section" id="homeAgenciesSection" hidden>
+          <div class="home-section__head">
+            <h2 class="home-section__title" data-i18n="home.section.agencies">Топ агентства</h2>
+            <button type="button" class="link-btn" id="homeAgenciesMore" data-i18n="home.section.allAgencies">Все агентства</button>
+          </div>
+          <ul class="home-rail home-rail--agency" id="homeAgenciesList"></ul>
+        </section>
+
         <div class="results-row">
           <p class="results-count" id="resultsCount">…</p>
-          <button type="button" class="btn btn--ghost btn--small" id="btnSaveSearch" data-i18n="saved.search.save" data-i18n-title="saved.search.title" title="Сохранить текущие фильтры и получать push-уведомления о новых объявлениях">⭐ Сохранить поиск</button>
+          <div class="results-row__actions">
+            <button type="button" class="btn btn--ghost btn--small" id="btnShowOnMap" data-i18n="results.showOnMap" title="Показать текущую выдачу на карте">🗺 Показать на карте</button>
+            <button type="button" class="btn btn--ghost btn--small" id="btnSaveSearch" data-i18n="saved.search.save" data-i18n-title="saved.search.title" title="Сохранить текущие фильтры и получать push-уведомления о новых объявлениях">⭐ Сохранить поиск</button>
+          </div>
         </div>
         <ul class="list" id="list"></ul>
       </div>
@@ -331,14 +380,44 @@
     </section>
 
     <section class="view" id="view-admin" data-view="admin" hidden>
-      <p class="form__intro" style="padding: 0 16px">Модерация (только admin).</p>
+      <p class="form__intro" id="adminViewIntro" style="padding: 0 16px">
+        Модерация объявлений и заявок на верификацию доступна администратору и наёмным модераторам. Раздел платежей и кнопка деплоя — только у администратора.
+      </p>
+      <div class="admin-list" id="adminDeploy" hidden style="padding-top: 8px">
+        <h3 class="admin-section-title">Деплой на сервер</h3>
+        <p class="form__intro" id="adminDeployHint" style="margin: 0 16px 12px">
+          Проверка настроек…
+        </p>
+        <div style="padding: 0 16px 16px">
+          <button type="button" class="btn btn--primary btn--block" id="btnAdminDeploy">Запустить деплой (GitHub Actions)</button>
+        </div>
+      </div>
       <div class="admin-stats" id="adminStats"></div>
       <h3 class="admin-section-title">Объявления на модерации</h3>
       <div class="admin-list" id="adminList"></div>
       <h3 class="admin-section-title">Заявки на верификацию</h3>
       <div class="admin-list" id="adminVerifications"></div>
-      <h3 class="admin-section-title">Платежи</h3>
-      <div class="admin-list" id="adminPayments"></div>
+      <div id="adminPaymentsSection">
+        <h3 class="admin-section-title">Платежи</h3>
+        <div class="admin-list" id="adminPayments"></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-agencies" data-view="agencies" hidden>
+      <div class="agencies">
+        <div class="agencies__intro">
+          <h2 class="agencies__title" data-i18n="agencies.title">Агентства недвижимости</h2>
+          <p class="agencies__lead" data-i18n="agencies.lead">Каталог проверенных агентств: посмотрите рейтинг, количество объявлений и свяжитесь напрямую.</p>
+        </div>
+        <div class="agencies__search">
+          <input type="search" class="search__input" id="agenciesSearch" data-i18n-placeholder="agencies.searchPh" placeholder="Поиск по названию или городу" autocomplete="off" />
+        </div>
+        <ul class="agencies__list" id="agenciesList"></ul>
+      </div>
+    </section>
+
+    <section class="view" id="view-agency" data-view="agency" hidden>
+      <div class="agency-page" id="agencyPage"></div>
     </section>
 
     <section class="view" id="view-more" data-view="more" hidden>
@@ -429,12 +508,51 @@
           <button type="button" class="btn btn--secondary btn--block" id="btnPushToggle" hidden>Включить push-уведомления</button>
           <div id="savedSearchesList" style="margin-top: 12px"></div>
         </div>
+        <div class="more__card">
+          <p class="more__label" data-i18n="more.discover">Обзор каталогов</p>
+          <button type="button" class="btn btn--secondary btn--block" id="btnGoAgencies" data-i18n="more.openAgencies">Каталог агентств</button>
+          <button type="button" class="btn btn--secondary btn--block" id="btnGoNewbuilds" data-i18n="more.openNewbuilds" style="margin-top:8px">Все новостройки</button>
+        </div>
+        <div class="more__card" id="agencyProfileCard" hidden>
+          <p class="more__label" data-i18n="agencyForm.label">Профиль агентства</p>
+          <p class="form__intro" data-i18n="agencyForm.intro" style="margin: 0 0 12px">Если вы агентство — заполните профиль, чтобы появиться в каталоге и показывать бейдж «Агентство» на объявлениях.</p>
+          <form class="agency-form" id="formAgency">
+            <label class="auth-calm-toggle" style="margin-bottom: 8px">
+              <input type="checkbox" name="isAgency" id="agencyIsAgency" />
+              <span data-i18n="agencyForm.iAmAgency">Я агентство недвижимости</span>
+            </label>
+            <fieldset class="agency-form__fields" id="agencyFieldset" disabled>
+              <label class="field"><span class="field__label" data-i18n="agencyForm.name">Название агентства</span><input class="field__input" name="agencyName" maxlength="120" /></label>
+              <label class="field"><span class="field__label" data-i18n="agencyForm.slug">Короткое имя для URL (необязательно)</span><input class="field__input" name="agencySlug" maxlength="60" placeholder="my-agency" /></label>
+              <label class="field"><span class="field__label" data-i18n="agencyForm.city">Город</span><input class="field__input" name="agencyCity" maxlength="80" /></label>
+              <label class="field"><span class="field__label" data-i18n="agencyForm.logo">Логотип (URL картинки или путь после загрузки)</span><input class="field__input" name="agencyLogo" maxlength="300" placeholder="/uploads/...png" /></label>
+              <label class="field"><span class="field__label" data-i18n="agencyForm.description">Описание (до 2000 знаков)</span><textarea class="field__input" name="agencyDescription" maxlength="2000" rows="4"></textarea></label>
+            </fieldset>
+            <button type="submit" class="btn btn--primary" data-i18n="agencyForm.save">Сохранить профиль агентства</button>
+            <button type="button" class="link-btn" id="btnAgencyOpenMine" hidden style="margin-left: 8px" data-i18n="agencyForm.openMine">Открыть мой профиль</button>
+          </form>
+        </div>
+        <div class="more__card" id="callbacksCard" hidden>
+          <p class="more__label" data-i18n="callback.list.title">Заявки на обратный звонок</p>
+          <p class="form__intro" data-i18n="callback.list.intro" style="margin: 0 0 12px">Сюда приходят запросы на обратный звонок по вашим объявлениям.</p>
+          <div class="callbacks-tabs">
+            <button type="button" class="auth-tab is-active" data-callback-tab="incoming" data-i18n="callback.tab.incoming">Входящие</button>
+            <button type="button" class="auth-tab" data-callback-tab="mine" data-i18n="callback.tab.mine">Мои заявки</button>
+          </div>
+          <div id="callbacksList" class="callbacks-list"></div>
+        </div>
+        <div class="more__card" id="promoCard" hidden>
+          <p class="more__label" data-i18n="promo.label">Продвижение объявлений</p>
+          <p class="form__intro" data-i18n="promo.intro" style="margin: 0 0 12px">Поднимите ваше объявление в ленте: TOP, VIP, Премиум — с бейджем и приоритетом.</p>
+          <div class="promo-tiers" id="promoTiersList"></div>
+          <p class="form__intro" id="promoNote" style="margin-top: 12px"></p>
+        </div>
         <div class="more__card" id="moreAdminCard" hidden>
-          <p class="more__label">Администрирование</p>
-          <button type="button" class="btn btn--secondary btn--block" id="btnOpenAdmin">Очередь модерации</button>
+          <p class="more__label">Модерация и админ</p>
+          <button type="button" class="btn btn--secondary btn--block" id="btnOpenAdmin">Панель модерации</button>
         </div>
         <div class="more__links">
-          <p class="more__note">API и БД на сервере. Демо: admin@demo.kg / admin123</p>
+          <p class="more__note">Демо: admin@demo.kg / admin123 · модератор: moderator@demo.kg / mod12345</p>
         </div>
       </div>
     </section>
@@ -457,23 +575,51 @@
 
   <div class="modal" id="modalDetail" hidden>
     <div class="modal__backdrop" data-close-modal></div>
-    <div class="modal__panel">
+    <div class="modal__panel modal__panel--detail">
       <button type="button" class="modal__close" data-close-modal aria-label="Закрыть">✕</button>
       <div class="modal__img-wrap" id="modalImgWrap"></div>
       <div class="modal__body">
+        <nav class="modal__crumbs" id="modalCrumbs" aria-label="Хлебные крошки"></nav>
         <p class="card__price" id="modalPrice"></p>
         <h2 class="modal__title" id="modalTitle"></h2>
         <p class="card__meta modal__meta" id="modalMeta"></p>
+        <div class="modal__badges" id="modalBadges"></div>
         <div class="modal__trust" id="modalTrust"></div>
+        <div class="modal__description" id="modalDescription"></div>
+        <div class="modal__agency" id="modalAgency"></div>
         <div class="modal__owner" id="modalOwner"></div>
         <div class="modal__media" id="modalMedia"></div>
         <div class="modal__actions">
           <a class="btn btn--primary btn--block" id="modalCall" href="#">Позвонить</a>
           <button type="button" class="btn btn--secondary btn--block" id="modalMsg">Написать</button>
+          <button type="button" class="btn btn--ghost btn--block" id="modalCallback" data-i18n="callback.cta">📞 Обратный звонок</button>
         </div>
         <div class="modal__live-actions" id="modalLiveActions"></div>
         <div class="modal__deal-actions" id="modalDealActions"></div>
         <div class="modal__reviews" id="modalReviews"></div>
+        <section class="modal__similar" id="modalSimilar" hidden>
+          <h3 class="modal__similar-title" data-i18n="detail.similar.title">Похожие объявления</h3>
+          <ul class="home-rail home-rail--in-modal" id="modalSimilarList"></ul>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalCallbackForm" hidden>
+    <div class="modal__backdrop" data-close-callback></div>
+    <div class="modal__panel modal__panel--auth">
+      <button type="button" class="modal__close" data-close-callback aria-label="Закрыть">✕</button>
+      <div class="modal__body">
+        <h3 class="h3" data-i18n="callback.title">Обратный звонок</h3>
+        <p class="form__intro" data-i18n="callback.intro">Оставьте имя и телефон — владелец перезвонит в удобное время.</p>
+        <form id="formCallback" class="auth-form">
+          <input type="hidden" name="listingId" value="" />
+          <label class="field"><span class="field__label" data-i18n="callback.name">Ваше имя</span><input class="field__input" name="name" maxlength="80" required /></label>
+          <label class="field"><span class="field__label" data-i18n="callback.phone">Телефон</span><input class="field__input" name="phone" type="tel" maxlength="32" required placeholder="+996 ..." /></label>
+          <label class="field"><span class="field__label" data-i18n="callback.preferredAt">Когда удобно (необязательно)</span><input class="field__input" name="preferredAt" maxlength="80" placeholder="например, сегодня после 18:00" /></label>
+          <label class="field"><span class="field__label" data-i18n="callback.comment">Комментарий (необязательно)</span><textarea class="field__input" name="comment" maxlength="500" rows="3"></textarea></label>
+          <button type="submit" class="btn btn--primary" data-i18n="callback.submit">Отправить заявку</button>
+        </form>
       </div>
     </div>
   </div>
@@ -510,28 +656,57 @@
 
   <div class="modal" id="modalAuth" hidden>
     <div class="modal__backdrop" data-close-auth></div>
-    <div class="modal__panel" style="max-height: 85vh">
+    <div class="modal__panel modal__panel--auth">
       <button type="button" class="modal__close" data-close-auth aria-label="Закрыть">✕</button>
-      <div class="modal__body">
+      <div class="modal__body auth-modal-body">
+        <a href="#main-app" class="auth-skip" data-close-auth>Вернуться к каталогу</a>
+        <p class="auth-intro">
+          Вход по email и паролю, через Google или Facebook. Пароль не хранится в открытом виде. Для спокойного восприятия включите режим ниже.
+        </p>
+        <label class="auth-calm-toggle">
+          <input type="checkbox" id="authCalmToggle" />
+          <span>Спокойный режим: крупнее текст, меньше отвлекающих анимаций (удобно при СДВГ)</span>
+        </label>
         <div class="auth-tabs">
           <button type="button" class="auth-tab is-active" data-auth="login">Вход</button>
           <button type="button" class="auth-tab" data-auth="register">Регистрация</button>
         </div>
+        <div id="recaptchaHost" class="recaptcha-host" hidden></div>
         <form class="auth-form" id="formLogin">
           <label class="field"><span class="field__label">Email</span><input class="field__input" name="email" type="email" required autocomplete="username" /></label>
           <label class="field"><span class="field__label">Пароль</span><input class="field__input" name="password" type="password" required autocomplete="current-password" /></label>
           <button type="submit" class="btn btn--primary">Войти</button>
+          <p class="auth-links"><button type="button" class="link-btn" id="linkForgotPassword">Забыли пароль?</button></p>
         </form>
         <form class="auth-form" id="formRegister" hidden>
-          <label class="field"><span class="field__label">Имя</span><input class="field__input" name="name" /></label>
-          <label class="field"><span class="field__label">Email</span><input class="field__input" name="email" type="email" required /></label>
-          <label class="field"><span class="field__label">Телефон</span><input class="field__input" name="phone" /></label>
-          <label class="field"><span class="field__label">Пароль (мин. 6)</span><input class="field__input" name="password" type="password" required minlength="6" /></label>
+          <label class="field"><span class="field__label">Имя (необязательно)</span><input class="field__input" name="name" autocomplete="name" /></label>
+          <label class="field"><span class="field__label">Email</span><input class="field__input" name="email" type="email" required autocomplete="email" /></label>
+          <label class="field"><span class="field__label">Телефон (необязательно)</span><input class="field__input" name="phone" type="tel" autocomplete="tel" /></label>
+          <label class="field"><span class="field__label">Пароль (минимум 6 символов)</span><input class="field__input" name="password" type="password" required minlength="6" autocomplete="new-password" /></label>
+          <p class="form__intro" style="margin: 0 0 8px">Нажимая «Зарегистрироваться», вы соглашаетесь с обработкой данных для работы сервиса.</p>
           <button type="submit" class="btn btn--primary">Зарегистрироваться</button>
         </form>
-        <div class="auth-google" id="authGoogleWrap" hidden>
-          <p class="auth-google__sep">или</p>
-          <div id="googleSignInBtn" class="auth-google__btn"></div>
+        <form class="auth-form" id="formForgot" hidden>
+          <p class="form__intro">Укажите email — отправим ссылку для сброса (на сервере без SMTP ссылка пишется в лог для администратора).</p>
+          <label class="field"><span class="field__label">Email</span><input class="field__input" name="email" type="email" required autocomplete="email" /></label>
+          <button type="submit" class="btn btn--primary">Отправить ссылку</button>
+          <p class="auth-links"><button type="button" class="link-btn" id="linkBackToLogin">← Назад ко входу</button></p>
+        </form>
+        <form class="auth-form" id="formReset" hidden>
+          <p class="form__intro">Придумайте новый пароль для входа по email.</p>
+          <input type="hidden" name="token" value="" />
+          <label class="field"><span class="field__label">Новый пароль</span><input class="field__input" name="password" type="password" required minlength="6" autocomplete="new-password" /></label>
+          <button type="submit" class="btn btn--primary">Сохранить пароль</button>
+          <p class="auth-links"><button type="button" class="link-btn" id="linkBackToLoginFromReset">← Назад ко входу</button></p>
+        </form>
+        <div class="auth-oauth">
+          <p class="auth-google__sep">или соцсети</p>
+          <div class="auth-google" id="authGoogleWrap" hidden>
+            <p class="form__intro" style="margin: 0 0 6px">Google — один клик (рекомендуется)</p>
+            <div id="googleSignInBtn" class="auth-google__btn"></div>
+          </div>
+          <button type="button" class="btn btn--secondary btn--block" id="btnFacebookLogin" hidden>Войти через Facebook</button>
+          <button type="button" class="btn btn--ghost btn--block" id="btnAppleLogin" disabled title="Требуется Apple Developer (Sign in with Apple)">Apple — скоро</button>
         </div>
       </div>
     </div>

@@ -43,3 +43,11 @@ export function requireAdmin(req, res, next) {
   }
   next();
 }
+
+export function requireModerator(req, res, next) {
+  const r = req.user?.role;
+  if (r !== "ADMIN" && r !== "MODERATOR") {
+    return res.status(403).json({ error: "Нужны права модератора или администратора" });
+  }
+  next();
+}

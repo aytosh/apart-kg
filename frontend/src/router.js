@@ -8,6 +8,7 @@ import { updateAddFormState } from "./views/listingForm.js";
 import { loadMoreView } from "./views/more.js";
 import { loadNewbuilds } from "./views/newbuilds.js";
 import { loadRoommate } from "./views/roommate.js";
+import { loadAgenciesList } from "./views/agencies.js";
 import { toast } from "./utils.js";
 import { track } from "./analytics.js";
 
@@ -17,12 +18,14 @@ const titles = {
   add: "Разместить",
   favorites: "Избранное",
   chat: "Сообщения",
-  admin: "Модерация",
+  admin: "Модерация / админ",
   more: "Ещё",
   newbuilds: "Новостройки",
   complex: "Жилой комплекс",
   roommate: "Сосед",
   building: "Профиль дома",
+  agencies: "Агентства",
+  agency: "Агентство",
 };
 
 export function setView(name) {
@@ -70,6 +73,7 @@ export function setView(name) {
   if (name === "more") loadMoreView();
   if (name === "newbuilds") loadNewbuilds();
   if (name === "roommate") loadRoommate();
+  if (name === "agencies") loadAgenciesList();
 }
 
 export function bindRouterEvents() {

@@ -1,5 +1,6 @@
 /**
- * Проверка reCAPTCHA v2/v3 (siteverify). Без RECAPTCHA_SECRET_KEY проверка пропускается.
+ * Проверка reCAPTCHA v2 (checkbox) или v3 (invisible). Без RECAPTCHA_SECRET_KEY проверка пропускается.
+ * RECAPTCHA_VERSION=v2 — ожидается токен с виджета checkbox; score не используется.
  */
 export async function verifyRecaptcha(token) {
   const secret = process.env.RECAPTCHA_SECRET_KEY;
@@ -15,6 +16,8 @@ export async function verifyRecaptcha(token) {
   });
   const data = await r.json().catch(() => ({}));
   if (!data.success) return { ok: false };
+  const isV2 = (process.env.RECAPTCHA_VERSION || "").toLowerCase() === "v2";
+  if (isV2) return { ok: true };
   if (typeof data.score === "number" && data.score < 0.3) return { ok: false };
   return { ok: true };
 }

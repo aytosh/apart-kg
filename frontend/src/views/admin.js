@@ -3,27 +3,80 @@ import { api } from "../api.js";
 import { esc, toast } from "../utils.js";
 import { loadListings } from "./home.js";
 
+function isStaff() {
+  const r = state.user?.role;
+  return r === "ADMIN" || r === "MODERATOR";
+}
+
+function isAdmin() {
+  return state.user?.role === "ADMIN";
+}
+
 export async function loadAdmin() {
   const box = document.getElementById("adminList");
   const statsBox = document.getElementById("adminStats");
   const paymentsBox = document.getElementById("adminPayments");
+  const paymentsSection = document.getElementById("adminPaymentsSection");
+  const deployWrap = document.getElementById("adminDeploy");
+  const deployHint = document.getElementById("adminDeployHint");
+  const btnDeploy = document.getElementById("btnAdminDeploy");
+
   if (!box) return;
-  if (!state.user || state.user.role !== "ADMIN") {
-    box.innerHTML = "<p class='form__intro'>Нет прав</p>";
+
+  if (!isStaff()) {
+    box.innerHTML = "<p class='form__intro'>Нужны права модератора или администратора</p>";
     if (statsBox) statsBox.innerHTML = "";
     if (paymentsBox) paymentsBox.innerHTML = "";
+    if (paymentsSection) paymentsSection.hidden = true;
+    if (deployWrap) deployWrap.hidden = true;
     return;
   }
+
+  if (paymentsSection) paymentsSection.hidden = !isAdmin();
+  if (deployWrap) deployWrap.hidden = !isAdmin();
+  if (btnDeploy) btnDeploy.hidden = !isAdmin();
+
+  if (isAdmin() && deployWrap && deployHint && btnDeploy) {
+    deployWrap.hidden = false;
+    btnDeploy.hidden = false;
+    try {
+      const st = await api("/admin/deploy-status");
+      deployHint.textContent = st.webhookConfigured
+        ? "Вебхук настроен на сервере. Нажмите кнопку ниже, чтобы отправить событие repository_dispatch в GitHub Actions и запустить деплой."
+        : `На сервере не задан DEPLOY_WEBHOOK_URL. ${st.hint || ""}`;
+    } catch {
+      deployHint.textContent = "Не удалось проверить настройки деплоя (нужен вход администратора).";
+    }
+    btnDeploy.onclick = async () => {
+      try {
+        const r = await api("/admin/deploy", {
+          method: "POST",
+          body: {},
+        });
+        toast(r.message || "Запрос отправлен");
+      } catch (e) {
+        toast(e.message || "Ошибка деплоя");
+      }
+    };
+  }
+
   try {
     const dash = await api("/admin/dashboard");
     if (statsBox) {
-      statsBox.innerHTML = `
-        <div class="stat-chip"><p class="stat-chip__label">Пользователи</p><p class="stat-chip__value">${dash.users}</p></div>
-        <div class="stat-chip"><p class="stat-chip__label">Объявления</p><p class="stat-chip__value">${dash.listingsAll}</p></div>
-        <div class="stat-chip"><p class="stat-chip__label">На модерации</p><p class="stat-chip__value">${dash.listingsPending}</p></div>
-        <div class="stat-chip"><p class="stat-chip__label">Выручка (сом)</p><p class="stat-chip__value">${Number(
-          dash.paymentsRevenueSom || 0
-        ).toLocaleString("ru-RU")}</p></div>`;
+      const chips = [
+        `<div class="stat-chip"><p class="stat-chip__label">Пользователи</p><p class="stat-chip__value">${dash.users}</p></div>`,
+        `<div class="stat-chip"><p class="stat-chip__label">Объявления</p><p class="stat-chip__value">${dash.listingsAll}</p></div>`,
+        `<div class="stat-chip"><p class="stat-chip__label">На модерации</p><p class="stat-chip__value">${dash.listingsPending}</p></div>`,
+      ];
+      if (isAdmin()) {
+        chips.push(
+          `<div class="stat-chip"><p class="stat-chip__label">Активные</p><p class="stat-chip__value">${dash.listingsActive}</p></div>`,
+          `<div class="stat-chip"><p class="stat-chip__label">Выручка (сом)</p><p class="stat-chip__value">${Number(
+            dash.paymentsRevenueSom || 0
+          ).toLocaleString("ru-RU")}</p></div>`
+        );
+      }
+      statsBox.innerHTML = chips.join("");
     }
 
     const { items } = await api("/admin/listings/pending");
@@ -115,12 +168,11 @@ export async function loadAdmin() {
       }
     }
 
-    const recentPayments = await api("/admin/payments/recent");
-    if (paymentsBox) {
+    if (isAdmin() && paymentsBox) {
+      const recentPayments = await api("/admin/payments/recent");
       const rows = recentPayments.items || [];
       paymentsBox.innerHTML =
-        `<p class='form__intro'>Последние платежи</p>` +
-        (rows.length
+        rows.length
           ? rows
               .map(
                 (p) => `<div class="payment-item">
@@ -129,7 +181,9 @@ export async function loadAdmin() {
             </div>`
               )
               .join("")
-          : "<p class='form__intro'>Платежей пока нет</p>");
+          : "<p class='form__intro'>Платежей пока нет</p>";
+    } else if (paymentsBox) {
+      paymentsBox.innerHTML = "";
     }
   } catch {
     box.innerHTML = "<p class='form__intro'>Ошибка загрузки</p>";

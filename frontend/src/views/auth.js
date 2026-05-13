@@ -9,16 +9,29 @@ import { updateMoreUI } from "./more.js";
 import { connectRealtime, disconnectRealtime } from "../realtime.js";
 import { ensurePushSubscription } from "../push.js";
 
-export function openAuth() {
+let recaptchaV2WidgetId = null;
+
+/** @param {"login"|"register"|"forgot"|"reset"|undefined} mode */
+export function openAuth(mode) {
   const m = document.getElementById("modalAuth");
-  if (m) m.hidden = false;
+  if (m) {
+    m.hidden = false;
+    if (mode) showAuthForms(mode);
+    else showAuthForms("login");
+    if (isRecaptchaV2()) void mountRecaptchaV2();
+  }
 }
+
 export function closeAuth() {
   const m = document.getElementById("modalAuth");
   if (m) m.hidden = true;
 }
 
-function loadRecaptchaScript(siteKey) {
+function isRecaptchaV2() {
+  return (appConfig.recaptchaVersion || "v3").toLowerCase() === "v2";
+}
+
+function loadRecaptchaScriptV3(siteKey) {
   if (!siteKey || window.grecaptcha) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
@@ -30,8 +43,48 @@ function loadRecaptchaScript(siteKey) {
   });
 }
 
+function loadRecaptchaScriptV2() {
+  if (!appConfig.recaptchaSiteKey || window.grecaptcha?.render) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const cb = `__rc2_${Date.now()}`;
+    window[cb] = () => resolve();
+    const s = document.createElement("script");
+    s.src = `https://www.google.com/recaptcha/api.js?onload=${cb}&render=explicit`;
+    s.async = true;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+async function mountRecaptchaV2() {
+  if (!isRecaptchaV2() || !appConfig.recaptchaSiteKey) return;
+  const host = document.getElementById("recaptchaHost");
+  if (!host) return;
+  await loadRecaptchaScriptV2();
+  await new Promise((resolve) => {
+    const run = () => {
+      if (recaptchaV2WidgetId !== null) {
+        window.grecaptcha.reset(recaptchaV2WidgetId);
+      } else {
+        recaptchaV2WidgetId = window.grecaptcha.render(host, {
+          sitekey: appConfig.recaptchaSiteKey,
+          theme: document.documentElement.dataset.theme === "light" ? "light" : "dark",
+        });
+      }
+      resolve();
+    };
+    if (window.grecaptcha?.ready) window.grecaptcha.ready(run);
+    else setTimeout(run, 100);
+  });
+}
+
 async function getRecaptchaToken(action) {
-  if (!appConfig.recaptchaSiteKey || !window.grecaptcha) return "";
+  if (!appConfig.recaptchaSiteKey) return "";
+  if (isRecaptchaV2()) {
+    await mountRecaptchaV2();
+    return window.grecaptcha?.getResponse(recaptchaV2WidgetId) || "";
+  }
+  if (!window.grecaptcha) return "";
   return new Promise((resolve) => {
     window.grecaptcha.ready(() => {
       window.grecaptcha
@@ -45,10 +98,52 @@ async function getRecaptchaToken(action) {
 export async function ensureRecaptcha() {
   if (!appConfig.recaptchaSiteKey) return;
   try {
-    await loadRecaptchaScript(appConfig.recaptchaSiteKey);
+    if (isRecaptchaV2()) await loadRecaptchaScriptV2();
+    else await loadRecaptchaScriptV3(appConfig.recaptchaSiteKey);
   } catch {
     /* ignore */
   }
+}
+
+function showAuthForms(mode) {
+  state.authMode = mode;
+  const ids = ["formLogin", "formRegister", "formForgot", "formReset"];
+  const map = { login: "formLogin", register: "formRegister", forgot: "formForgot", reset: "formReset" };
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.hidden = id !== map[mode];
+  });
+  document.querySelectorAll(".auth-tab").forEach((t) => {
+    const tabMode = t.getAttribute("data-auth");
+    t.classList.toggle(
+      "is-active",
+      (mode === "login" && tabMode === "login") || (mode === "register" && tabMode === "register")
+    );
+  });
+  const host = document.getElementById("recaptchaHost");
+  if (host) {
+    const needHost =
+      isRecaptchaV2() &&
+      appConfig.recaptchaSiteKey &&
+      ["login", "register", "forgot", "reset"].includes(mode);
+    host.hidden = !needHost;
+  }
+  if (isRecaptchaV2() && recaptchaV2WidgetId !== null && ["login", "register", "forgot", "reset"].includes(mode)) {
+    window.grecaptcha?.reset(recaptchaV2WidgetId);
+  }
+}
+
+function bindCalmToggle() {
+  const calm = document.getElementById("authCalmToggle");
+  if (!calm) return;
+  const saved = localStorage.getItem("apartAuthCalm") === "1";
+  calm.checked = saved;
+  document.documentElement.classList.toggle("auth-calm", saved);
+  calm.addEventListener("change", () => {
+    const on = calm.checked;
+    localStorage.setItem("apartAuthCalm", on ? "1" : "0");
+    document.documentElement.classList.toggle("auth-calm", on);
+  });
 }
 
 async function handleAuthSuccess(token, user, greeting) {
@@ -110,20 +205,88 @@ export async function initGoogleSignIn() {
   }
 }
 
+function initFacebookLogin() {
+  if (!appConfig.facebookAppId) return;
+  const btn = document.getElementById("btnFacebookLogin");
+  if (!btn) return;
+  btn.hidden = false;
+  btn.addEventListener("click", () => {
+    if (!window.FB) {
+      toast("Facebook SDK ещё загружается");
+      return;
+    }
+    window.FB.login(
+      async (resp) => {
+        try {
+          const tok = resp.authResponse?.accessToken;
+          if (!tok) {
+            toast("Не удалось получить доступ Facebook");
+            return;
+          }
+          const { token, user } = await api("/auth/facebook", { method: "POST", body: { accessToken: tok } });
+          handleAuthSuccess(token, user, `Добро пожаловать, ${user.email}`);
+        } catch (e) {
+          toast(e.message);
+        }
+      },
+      { scope: "public_profile,email" }
+    );
+  });
+}
+
+export async function initFacebookSdk() {
+  if (!appConfig.facebookAppId || window.__fbSdkLoaded) return;
+  window.__fbSdkLoaded = true;
+  await new Promise((resolve, reject) => {
+    window.fbAsyncInit = () => {
+      try {
+        window.FB.init({
+          appId: appConfig.facebookAppId,
+          cookie: true,
+          xfbml: false,
+          version: "v19.0",
+        });
+        initFacebookLogin();
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    };
+    const s = document.createElement("script");
+    s.src = "https://connect.facebook.net/ru_RU/sdk.js";
+    s.async = true;
+    s.defer = true;
+    s.crossOrigin = "anonymous";
+    s.onerror = () => reject(new Error("Facebook SDK load error"));
+    document.body.appendChild(s);
+  });
+}
+
 export function bindAuthForms() {
-  document.querySelectorAll("[data-close-auth]").forEach((el) =>
-    el.addEventListener("click", closeAuth)
-  );
+  bindCalmToggle();
+
+  document.querySelectorAll("[data-close-auth]").forEach((el) => el.addEventListener("click", closeAuth));
+
   document.querySelectorAll(".auth-tab").forEach((tab) => {
     tab.addEventListener("click", () => {
-      document.querySelectorAll(".auth-tab").forEach((t) => t.classList.remove("is-active"));
-      tab.classList.add("is-active");
       const mode = tab.getAttribute("data-auth");
-      state.authMode = mode;
-      document.getElementById("formLogin").hidden = mode !== "login";
-      document.getElementById("formRegister").hidden = mode !== "register";
+      if (mode === "login" || mode === "register") showAuthForms(mode);
     });
   });
+
+  document.getElementById("linkForgotPassword")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    showAuthForms("forgot");
+  });
+  document.getElementById("linkBackToLogin")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    showAuthForms("login");
+  });
+  document.getElementById("linkBackToLoginFromReset")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    showAuthForms("login");
+  });
+
   const loginForm = document.getElementById("formLogin");
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
@@ -168,6 +331,59 @@ export function bindAuthForms() {
       }
     });
   }
+
+  const forgotForm = document.getElementById("formForgot");
+  if (forgotForm) {
+    forgotForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      try {
+        const recaptchaToken = await getRecaptchaToken("forgot");
+        const r = await api("/auth/forgot-password", {
+          method: "POST",
+          body: { email: fd.get("email"), recaptchaToken },
+        });
+        toast(r.message || "Готово");
+        showAuthForms("login");
+      } catch (err) {
+        toast(err.message);
+      }
+    });
+  }
+
+  const resetForm = document.getElementById("formReset");
+  if (resetForm) {
+    resetForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      try {
+        const recaptchaToken = await getRecaptchaToken("reset");
+        const r = await api("/auth/reset-password", {
+          method: "POST",
+          body: {
+            token: fd.get("token"),
+            password: fd.get("password"),
+            recaptchaToken,
+          },
+        });
+        toast(r.message || "Пароль обновлён");
+        showAuthForms("login");
+        const url = new URL(window.location.href);
+        url.searchParams.delete("resetToken");
+        window.history.replaceState({}, "", url.pathname + url.search);
+      } catch (err) {
+        toast(err.message);
+      }
+    });
+  }
+
+  showAuthForms("login");
+}
+
+export function openAuthResetFromUrl(token) {
+  const input = document.querySelector('#formReset input[name="token"]');
+  if (input) input.value = token;
+  openAuth("reset");
 }
 
 export function logout() {

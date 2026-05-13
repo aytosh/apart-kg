@@ -1,10 +1,24 @@
 import { state, setToken } from "./state.js";
+import { getCurrentLang } from "./i18n.js";
+
+function withLangQuery(path, method) {
+  const m = (method || "GET").toUpperCase();
+  if (m !== "GET") return path;
+  const base = path.startsWith("/") ? path : `/${path}`;
+  if (!base.startsWith("/listings") && !base.startsWith("/favorites")) return path;
+  const lang = getCurrentLang();
+  const sep = path.includes("?") ? "&" : "?";
+  return `${path}${sep}lang=${encodeURIComponent(lang)}`;
+}
 
 export async function api(path, opts = {}) {
+  const method = opts.method || "GET";
+  const pathWithLang = opts.skipLang ? path : withLangQuery(path, method);
   const headers = { "Content-Type": "application/json", ...opts.headers };
   if (state.token) headers.Authorization = `Bearer ${state.token}`;
-  const r = await fetch(`/api${path}`, {
+  const r = await fetch(`/api${pathWithLang}`, {
     ...opts,
+    method,
     headers,
     body: opts.body != null ? JSON.stringify(opts.body) : undefined,
   });

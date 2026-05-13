@@ -1,20 +1,62 @@
+/* === Design tokens (Apart.kg) ===
+   Acent: emerald/teal — доверие, недвижимость
+   Шкала: 4 / 8 / 12 / 16 / 24 / 32 / 48
+   Радиусы: 8 / 12 / 16 / 20
+*/
 :root {
-  --bg: #0c0614;
-  --surface: #161022;
-  --surface2: #1f1530;
-  --border: rgba(255, 255, 255, 0.09);
-  --text: #f4edff;
-  --muted: #a89bc4;
-  --accent: #a855f7;
-  --accent-hover: #c084fc;
-  --accent-rgb: 168, 85, 247;
+  /* Цвета (тёмная тема — по умолчанию) */
+  --bg: #0b1310;
+  --surface: #11201b;
+  --surface2: #172a23;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #eef7f3;
+  --muted: #9bb3aa;
+  --accent: #14b8a6;
+  --accent-hover: #2dd4bf;
+  --accent-rgb: 20, 184, 166;
   --accent-soft: rgba(var(--accent-rgb), 0.16);
   --accent-line: rgba(var(--accent-rgb), 0.38);
   --success: #34d399;
-  --radius: 14px;
-  --radius-sm: 10px;
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --font: "Inter", system-ui, -apple-system, sans-serif;
+  --warning: #f59e0b;
+  --danger: #f87171;
+
+  /* Скругления */
+  --radius: 16px;
+  --radius-sm: 12px;
+  --radius-xs: 8px;
+  --radius-lg: 20px;
+
+  /* Отступы (token-scale) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-8: 48px;
+
+  /* Тени */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.18);
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.45);
+
+  /* Типографика */
+  --font: "Manrope", "Onest", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font);
+  --fs-caption: clamp(0.75rem, 0.06vw + 0.74rem, 0.8125rem);
+  --fs-body: clamp(0.875rem, 0.1vw + 0.86rem, 0.9375rem);
+  --fs-lead: clamp(1rem, 0.15vw + 0.97rem, 1.0625rem);
+  --fs-h3: clamp(1.0625rem, 0.25vw + 1rem, 1.1875rem);
+  --fs-h2: clamp(1.25rem, 0.4vw + 1.15rem, 1.5rem);
+  --fs-h1: clamp(1.5rem, 0.7vw + 1.3rem, 1.875rem);
+
+  /* Кривые анимаций */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 180ms;
+  --dur-slow: 280ms;
+
+  /* Layout */
   --max-w: 1200px;
   --form-max: 640px;
   --nav-breakpoint: 900px;
@@ -22,18 +64,20 @@
 }
 
 body[data-theme="light"] {
-  --bg: #f7f5ff;
+  --bg: #f5fbf8;
   --surface: #ffffff;
-  --surface2: #f2edff;
-  --border: rgba(80, 40, 150, 0.14);
-  --text: #1f1236;
-  --muted: #6f5e95;
-  --accent: #7c3aed;
-  --accent-hover: #6d28d9;
-  --accent-rgb: 124, 58, 237;
+  --surface2: #eef7f2;
+  --border: rgba(10, 80, 60, 0.12);
+  --text: #0d2620;
+  --muted: #5b7a72;
+  --accent: #0f9c8c;
+  --accent-hover: #0c8576;
+  --accent-rgb: 15, 156, 140;
   --accent-soft: rgba(var(--accent-rgb), 0.12);
   --accent-line: rgba(var(--accent-rgb), 0.3);
-  --shadow: 0 8px 30px rgba(44, 20, 90, 0.12);
+  --shadow-sm: 0 2px 8px rgba(15, 80, 60, 0.08);
+  --shadow: 0 8px 28px rgba(15, 80, 60, 0.12);
+  --shadow-lg: 0 16px 48px rgba(15, 80, 60, 0.18);
 }
 
 *,
@@ -365,6 +409,447 @@ body {
   color: #fff;
 }
 
+.chips--rooms {
+  padding-top: 0;
+  padding-bottom: 12px;
+}
+
+.chips--rooms .chip {
+  min-width: 40px;
+  text-align: center;
+  padding: 6px 12px;
+}
+
+/* === Каталог агентств === */
+
+.agencies {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.agencies__title {
+  margin: 0;
+  font-size: var(--fs-h2);
+  font-weight: 700;
+}
+
+.agencies__lead {
+  margin: 0;
+  color: var(--muted);
+  max-width: 720px;
+}
+
+.agencies__search {
+  display: flex;
+}
+
+.agencies__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.agency-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+.agency-card:hover {
+  border-color: var(--accent-line);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.agency-card__logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--surface2);
+  overflow: hidden;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+.agency-card__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.agency-card__logo-ph {
+  font-size: 1.5rem;
+  color: var(--muted);
+}
+
+.agency-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.agency-card__name {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--fs-body);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agency-card__meta,
+.agency-card__rating {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--muted);
+}
+
+.agency-card--skeleton {
+  cursor: default;
+}
+
+.agency-card--skeleton:hover {
+  transform: none;
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.agency-page {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.agency-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.agency-head__logo {
+  width: 88px;
+  height: 88px;
+  border-radius: 16px;
+  background: var(--surface2);
+  overflow: hidden;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+.agency-head__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.agency-head__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.agency-head__desc {
+  margin: 4px 0 0;
+  color: var(--text);
+}
+
+.agency-head__count {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.agency-form .field {
+  margin-bottom: 8px;
+}
+
+.agency-form__fields[disabled] {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.agency-form__fields {
+  border: 0;
+  padding: 0;
+  margin: 0 0 12px;
+}
+
+/* === Callbacks (заявки на обратный звонок) === */
+
+.callbacks-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.callbacks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.callback-row {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 12px 14px;
+}
+
+.callback-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.callback-row__head a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.callback-row__meta {
+  margin-top: 4px;
+  font-size: var(--fs-caption);
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.callback-row__comment {
+  margin-top: 6px;
+  font-size: var(--fs-caption);
+  color: var(--text);
+}
+
+.callback-row__actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+/* === Promo (тарифы) === */
+
+.promo-tiers {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.promo-tier {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.promo-tier__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.promo-tier__days {
+  font-size: var(--fs-caption);
+  color: var(--muted);
+}
+
+.promo-tier__price {
+  margin: 0;
+  font-size: var(--fs-h2);
+  font-weight: 700;
+}
+
+.promo-tier__perks {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--fs-caption);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.promo-tier__action {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+
+/* === Detail modal: крошки, агентство, описание, похожие === */
+
+.modal__crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  font-size: var(--fs-caption);
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.modal__crumb {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: inherit;
+  text-decoration: none;
+}
+
+.modal__crumb:hover {
+  text-decoration: underline;
+}
+
+.modal__crumb--last {
+  color: var(--muted);
+  cursor: default;
+}
+
+.modal__crumb--last:hover {
+  text-decoration: none;
+}
+
+.modal__crumb-sep {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.modal__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.modal__description {
+  margin-top: 12px;
+}
+
+.modal__description-inner {
+  background: var(--surface2);
+  border-radius: var(--radius-xs);
+  padding: 12px 14px;
+  line-height: 1.55;
+  color: var(--text);
+  font-size: var(--fs-body);
+}
+
+.modal__agency-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-top: 12px;
+}
+
+.modal__agency-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+.modal__agency-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modal__agency-name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.modal__agency-card .btn {
+  margin-left: auto;
+}
+
+.modal__similar {
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.modal__similar-title {
+  margin: 0 0 12px;
+  font-size: var(--fs-h3);
+  font-weight: 700;
+}
+
+.home-rail--in-modal {
+  grid-auto-columns: minmax(180px, 220px);
+}
+
+/* На широких экранах модалки — две колонки: контент слева, контакты + похожие справа */
+@media (min-width: 1400px) {
+  .modal__panel--detail .modal__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
+    grid-column-gap: 24px;
+    align-items: start;
+  }
+  .modal__panel--detail .modal__body > .modal__crumbs {
+    grid-column: 1 / -1;
+  }
+  .modal__panel--detail .modal__body > .modal__similar {
+    grid-column: 1 / -1;
+  }
+  .modal__panel--detail .modal__body > .modal__description,
+  .modal__panel--detail .modal__body > .modal__media,
+  .modal__panel--detail .modal__body > .modal__reviews {
+    grid-column: 1;
+  }
+  .modal__panel--detail .modal__body > .modal__price,
+  .modal__panel--detail .modal__body > .card__price,
+  .modal__panel--detail .modal__body > .modal__title,
+  .modal__panel--detail .modal__body > .modal__meta,
+  .modal__panel--detail .modal__body > .modal__badges {
+    grid-column: 1;
+  }
+  .modal__panel--detail .modal__body > .modal__trust,
+  .modal__panel--detail .modal__body > .modal__agency,
+  .modal__panel--detail .modal__body > .modal__owner,
+  .modal__panel--detail .modal__body > .modal__actions,
+  .modal__panel--detail .modal__body > .modal__live-actions,
+  .modal__panel--detail .modal__body > .modal__deal-actions {
+    grid-column: 2;
+  }
+}
+
 /* List */
 .main {
   padding: 0 16px 88px;
@@ -387,6 +872,13 @@ body {
 
 .results-row .results-count {
   margin: 0;
+}
+
+.results-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .btn--ghost {
@@ -1158,14 +1650,15 @@ body[data-theme="dark"] .rent-row--ok {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 20px;
+  padding: 12px 18px;
   border: none;
   border-radius: var(--radius-sm);
   font: inherit;
   font-weight: 600;
-  font-size: 0.9375rem;
+  font-size: var(--fs-body);
   cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
+  transition: background-color var(--dur) var(--ease), transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur) var(--ease), filter var(--dur) var(--ease);
 }
 
 .btn:active {
@@ -1173,15 +1666,24 @@ body[data-theme="dark"] .rent-row--ok {
 }
 
 .btn--primary {
-  background: linear-gradient(135deg, #9333ea 0%, #7c3aed 50%, #6d28d9 100%);
-  color: #fff;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 92%, white 8%) 0%,
+    var(--accent) 50%,
+    var(--accent-hover) 100%
+  );
+  color: #062e29;
   width: 100%;
   margin-top: 8px;
-  box-shadow: 0 4px 20px rgba(var(--accent-rgb), 0.35);
+  box-shadow: 0 4px 20px rgba(var(--accent-rgb), 0.32);
+}
+
+body[data-theme="light"] .btn--primary {
+  color: #ffffff;
 }
 
 .btn--primary:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.06);
 }
 
 .btn--primary:focus-visible,
@@ -1478,6 +1980,60 @@ body[data-theme="dark"] .rent-row--ok {
     margin-bottom: 0;
     animation: modalIn 0.2s ease;
   }
+
+  /* Карточка объявления: шире на ультрашироких и две колонки от ~1200px */
+  #modalDetail .modal__panel--detail {
+    max-width: min(680px, 92vw);
+    max-height: min(94dvh, 960px);
+  }
+}
+
+@media (min-width: 1100px) {
+  #modalDetail .modal__panel--detail {
+    max-width: min(860px, 82vw);
+  }
+}
+
+@media (min-width: 1400px) {
+  #modalDetail .modal__panel--detail {
+    max-width: min(1040px, 74vw);
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  #modalDetail .modal__panel--detail .modal__close {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  #modalDetail .modal__panel--detail .modal__img-wrap {
+    grid-column: 1;
+    grid-row: 2;
+    aspect-ratio: 4 / 3;
+    min-height: 280px;
+    max-height: none;
+  }
+
+  #modalDetail .modal__panel--detail .modal__body {
+    grid-column: 2;
+    grid-row: 2;
+    overflow-y: auto;
+    max-height: min(90dvh, 920px);
+  }
+}
+
+@media (min-width: 2000px) {
+  #modalDetail .modal__panel--detail {
+    max-width: min(1240px, 68vw);
+  }
+}
+
+@media (min-width: 2800px) {
+  #modalDetail .modal__panel--detail {
+    max-width: min(1400px, 62vw);
+  }
 }
 
 /* === Р”РѕРїРѕР»РЅРµРЅРёСЏ: С‡Р°С‚, Р°РІС‚РѕСЂРёР·Р°С†РёСЏ, Р°РґРјРёРЅ === */
@@ -1718,7 +2274,124 @@ body[data-theme="dark"] .rent-row--ok {
   max-width: 100%;
 }
 
-.badge-unread {
+/* Модалка входа: адаптив и доступность */
+.modal__panel--auth {
+  max-width: min(480px, 100%);
+}
+
+.auth-modal-body {
+  max-width: 100%;
+}
+
+.auth-skip {
+  display: inline-block;
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.auth-skip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.auth-intro {
+  margin: 0 0 12px;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.auth-calm-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.auth-calm-toggle input {
+  margin-top: 3px;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.recaptcha-host {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+  min-height: 78px;
+}
+
+.auth-links {
+  margin: 10px 0 0;
+  text-align: center;
+}
+
+.link-btn {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px 0;
+}
+
+.link-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.auth-oauth {
+  margin-top: 8px;
+}
+
+/* Спокойный режим авторизации (СДВГ): крупнее, меньше анимаций */
+html.auth-calm .modal__panel--auth {
+  font-size: 1.05rem;
+}
+
+html.auth-calm .auth-intro,
+html.auth-calm .form__intro {
+  font-size: 1rem !important;
+  line-height: 1.55 !important;
+}
+
+html.auth-calm .field__label {
+  font-size: 0.95rem;
+}
+
+html.auth-calm .field__input,
+html.auth-calm .btn {
+  min-height: 48px;
+  font-size: 1rem;
+}
+
+html.auth-calm .modal__panel--auth {
+  animation: none;
+}
+
+@media (max-width: 639px) {
+  .modal__panel--auth .modal__body {
+    padding-bottom: calc(28px + env(safe-area-inset-bottom, 0));
+  }
+}
+
+@media (min-width: 640px) {
+  .modal__panel--auth {
+    max-height: min(92dvh, 880px);
+  }
+}
+
   display: inline-block;
   min-width: 18px;
   padding: 2px 6px;
@@ -2140,8 +2813,399 @@ body[data-theme="dark"] .rent-row--ok {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   padding: 0 8px;
   font: inherit;
   cursor: pointer;
+  min-width: 56px;
+}
+
+.lang-switch--currency {
+  font-weight: 600;
+}
+
+.card__price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+}
+
+.card__price-alt {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ============================================================
+   Design-system additions (Apart.kg) — фаза A
+   ============================================================ */
+
+/* Универсальный фокус-ринг для всех интерактивных */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* Скелетоны загрузки (Airbnb-style shimmer) */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface2) 70%, var(--surface) 30%);
+  border-radius: var(--radius-sm);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+  animation: skeleton-shimmer 1.4s var(--ease) infinite;
+}
+
+body[data-theme="light"] .skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(15, 80, 60, 0.07) 50%,
+    transparent 100%
+  );
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.skeleton-card__img {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+}
+
+.skeleton-card__body {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.skeleton-card__line {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.skeleton-card__line--lg {
+  height: 18px;
+  width: 60%;
+}
+
+.skeleton-card__line--md {
+  width: 85%;
+}
+
+.skeleton-card__line--sm {
+  width: 45%;
+}
+
+/* Пустые и ошибочные состояния списка */
+.state-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-5);
+  color: var(--muted);
+}
+
+.state-block__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1.6rem;
+}
+
+.state-block__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.state-block__text {
+  margin: 0;
+  font-size: var(--fs-body);
+  max-width: 36ch;
+  line-height: 1.55;
+}
+
+.state-block__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: var(--space-2);
+}
+
+/* Универсальные размеры заголовков (можно использовать в новых разделах) */
+.h1 { font-size: var(--fs-h1); font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; margin: 0; }
+.h2 { font-size: var(--fs-h2); font-weight: 700; letter-spacing: -0.005em; line-height: 1.25; margin: 0; }
+.h3 { font-size: var(--fs-h3); font-weight: 700; line-height: 1.3; margin: 0; }
+.caption { font-size: var(--fs-caption); color: var(--muted); }
+
+/* Бейджи (срочно / VIP / TOP / Премиум / агентство) — единый кит */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: var(--surface2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.badge--urgent {
+  background: rgba(248, 113, 113, 0.16);
+  color: var(--danger);
+  border-color: rgba(248, 113, 113, 0.32);
+  text-transform: none;
+}
+
+.badge--vip {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #3a2a00;
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.badge--top {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-line);
+}
+
+.badge--premium {
+  background: linear-gradient(135deg, #c084fc 0%, #a855f7 100%);
+  color: #1f0a36;
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+.badge--agency {
+  background: rgba(56, 189, 248, 0.16);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.34);
+  text-transform: none;
+}
+
+body[data-theme="light"] .badge--top {
+  color: var(--accent-hover);
+}
+
+/* Чуть мягче карточки (Airbnb-style) на широких экранах */
+@media (min-width: 900px) {
+  .card {
+    border-radius: var(--radius-lg);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+}
+
+/* === Home sections (Продажа / Аренда / Новостройки / Агентства) === */
+
+.home-section {
+  padding: 0 var(--space-4) var(--space-5);
+}
+
+.home-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 var(--space-3);
+}
+
+.home-section__title {
+  margin: 0;
+  font-size: var(--fs-h2);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+
+.home-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(220px, 240px);
+  gap: var(--space-3);
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: var(--space-1) 0 var(--space-3);
+  margin: 0;
+  list-style: none;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: var(--space-1);
+  scrollbar-width: thin;
+}
+
+.home-rail::-webkit-scrollbar {
+  height: 6px;
+}
+
+.home-rail::-webkit-scrollbar-thumb {
+  background: var(--accent-soft);
+  border-radius: 3px;
+}
+
+.home-rail__item {
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
+}
+
+.home-rail__item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--accent-line);
+}
+
+.home-rail__img-wrap {
+  aspect-ratio: 4 / 3;
+  background: var(--surface2);
+}
+
+.home-rail__img-wrap--complex,
+.home-rail__img-wrap--agency {
+  aspect-ratio: 16 / 10;
+}
+
+.home-rail__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-size: cover;
+  background-position: center;
+}
+
+.home-rail__img--ph {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 2rem;
+  background: var(--surface2);
+}
+
+.home-rail__body {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-rail__price {
+  margin: 0;
+  font-weight: 700;
+  font-size: var(--fs-h3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+}
+
+.home-rail__price small {
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.8em;
+}
+
+.home-rail__title {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--fs-body);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.home-rail__meta {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.home-rail__badges {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+.home-rail__img-wrap {
+  position: relative;
+}
+
+.home-rail__item--skeleton {
+  cursor: default;
+}
+
+.home-rail__item--skeleton:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--border);
+}
+
+@media (max-width: 700px) {
+  .home-section {
+    padding: 0 var(--space-3) var(--space-4);
+  }
+  .home-rail {
+    grid-auto-columns: minmax(180px, 70%);
+    padding-left: 0;
+  }
 }

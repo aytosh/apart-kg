@@ -2,9 +2,11 @@ import { Router } from "express";
 import { body, query, validationResult } from "express-validator";
 import { prisma } from "../prisma.js";
 import { authOptional, authRequired } from "../middleware/auth.js";
-import { parseImages, imgUrl } from "../utils/images.js";
-import { auditListing, parseTrustFlags } from "../services/trust.js";
-import { translateAll, hasProvider } from "../services/translate.js";
+import { auditListing } from "../services/trust.js";
+import { translateAll, hasProvider, translateText } from "../services/translate.js";
+import { listingToPublic } from "../services/listingPublic.js";
+import { parseI18nMap, resolveListingLang } from "../utils/listingLang.js";
+import { listingMatchesRooms, normalizeRoomsFilter } from "../utils/rooms.js";
 
 const router = Router();
 
@@ -20,107 +22,44 @@ const typeMap = {
   parking: "PARKING",
 };
 
-function parseTourPhotos(json) {
-  try {
-    const arr = JSON.parse(json || "[]");
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
+async function enrichListingLiveTranslate(listing, pub, lang) {
+  if (lang === "ru" || !hasProvider()) return pub;
+  const ti = parseI18nMap(listing.titleI18n);
+  const di = parseI18nMap(listing.descriptionI18n);
+  const out = { ...pub };
+  const jobs = [];
+  if (!ti?.[lang]) {
+    jobs.push(translateText(listing.title, lang).then((x) => {
+      out.title = x;
+    }));
   }
-}
-
-function parseI18n(json) {
-  if (!json) return null;
-  try {
-    const v = JSON.parse(json);
-    return v && typeof v === "object" ? v : null;
-  } catch {
-    return null;
+  if (listing.description && !di?.[lang]) {
+    jobs.push(translateText(listing.description, lang).then((x) => {
+      out.description = x;
+    }));
   }
-}
-
-function listingToPublic(listing, baseUrl, opts = {}) {
-  const imgs = parseImages(listing.images).map((p) => imgUrl(p, baseUrl));
-  const flags = parseTrustFlags(listing.trustFlags);
-  const tour = parseTourPhotos(listing.tourPhotos).map((t) => ({
-    ...t,
-    url: imgUrl(t.path, baseUrl),
-  }));
-  const videoUrl = listing.videoUrl ? imgUrl(listing.videoUrl, baseUrl) : null;
-  return {
-    id: listing.id,
-    userId: listing.userId,
-    deal: listing.deal === "RENT" ? "rent" : "sale",
-    type: listing.propertyType === "NEWBUILD" ? "new" : listing.propertyType.toLowerCase(),
-    propertyType: listing.propertyType,
-    title: listing.title,
-    district: listing.district,
-    description: listing.description,
-    titleI18n: parseI18n(listing.titleI18n),
-    descriptionI18n: parseI18n(listing.descriptionI18n),
-    price: listing.price,
-    currency: listing.currency,
-    rooms: listing.rooms,
-    area: listing.area,
-    floor: listing.floor,
-    lat: listing.lat,
-    lng: listing.lng,
-    images: imgs,
-    image: imgs[0] || null,
-    videoUrl,
-    tourPhotos: tour,
-    has360: tour.some((t) => t.type === "panorama360"),
-    hasVideo: !!videoUrl,
-    liveAvailable: !!listing.liveAvailable,
-    complexId: listing.complexId,
-    complex: listing.complex
-      ? {
-          id: listing.complex.id,
-          slug: listing.complex.slug,
-          name: listing.complex.name,
-          progressPercent: listing.complex.progressPercent,
-          currentStage: listing.complex.currentStage,
-          deadline: listing.complex.deadline,
-          developer: listing.complex.developer
-            ? {
-                id: listing.complex.developer.id,
-                slug: listing.complex.developer.slug,
-                name: listing.complex.developer.name,
-                verified: listing.complex.developer.verified,
-              }
-            : undefined,
-        }
-      : undefined,
-    unitNumber: listing.unitNumber,
-    floorPlanPath: listing.floorPlanPath ? imgUrl(listing.floorPlanPath, baseUrl) : null,
-    constructionStage: listing.constructionStage || null,
-    rentPeriod: listing.rentPeriod
-      ? listing.rentPeriod.toLowerCase()
-      : null,
-    installment: listing.installment,
-    exchange: listing.exchange,
-    urgent: listing.urgent,
-    status: listing.status.toLowerCase(),
-    trustScore: typeof listing.trustScore === "number" ? listing.trustScore : null,
-    trustFlags: opts.includeFlags ? flags : undefined,
-    createdAt: listing.createdAt,
-    user: listing.user
-      ? {
-          id: listing.user.id,
-          name: listing.user.name,
-          email: listing.user.email,
-          verifiedLevel: listing.user.verifiedLevel,
-          ratingAvg: listing.user.ratingAvg,
-          ratingCount: listing.user.ratingCount,
-          wechatId: listing.user.wechatId || null,
-        }
-      : undefined,
-  };
+  for (const [key, val] of [
+    ["district", listing.district],
+    ["rooms", listing.rooms],
+    ["area", listing.area],
+    ["floor", listing.floor],
+    ["currency", listing.currency],
+  ]) {
+    if (!val) continue;
+    jobs.push(
+      translateText(String(val), lang).then((x) => {
+        out[key] = x;
+      })
+    );
+  }
+  await Promise.all(jobs);
+  return out;
 }
 
 router.get("/", authOptional, async (req, res) => {
   const baseUrl = `${req.protocol}://${req.get("host")}`;
   const q = req.query;
+  const lang = resolveListingLang(q.lang);
 
   const where = {
     status: "ACTIVE",
@@ -189,7 +128,7 @@ router.get("/", authOptional, async (req, res) => {
     }
   }
 
-  const listings = await prisma.listing.findMany({
+  let listings = await prisma.listing.findMany({
     where,
     include: {
       user: {
@@ -201,6 +140,10 @@ router.get("/", authOptional, async (req, res) => {
           ratingAvg: true,
           ratingCount: true,
           wechatId: true,
+          isAgency: true,
+          agencyName: true,
+          agencySlug: true,
+          agencyLogo: true,
         },
       },
       complex: {
@@ -209,9 +152,14 @@ router.get("/", authOptional, async (req, res) => {
         },
       },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ priorityScore: "desc" }, { createdAt: "desc" }],
     take: 200,
   });
+
+  const roomsFilter = normalizeRoomsFilter(q.rooms);
+  if (roomsFilter) {
+    listings = listings.filter((l) => listingMatchesRooms(l, roomsFilter));
+  }
 
   const mine = req.user?.id;
   let favoriteIds = new Set();
@@ -225,9 +173,104 @@ router.get("/", authOptional, async (req, res) => {
 
   res.json({
     items: listings.map((l) => ({
-      ...listingToPublic(l, baseUrl),
+      ...listingToPublic(l, baseUrl, { lang }),
       isFavorite: favoriteIds.has(l.id),
     })),
+  });
+});
+
+router.get("/:id/similar", authOptional, async (req, res) => {
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const lang = resolveListingLang(req.query.lang);
+  const base = await prisma.listing.findUnique({
+    where: { id: req.params.id },
+    select: {
+      id: true,
+      deal: true,
+      propertyType: true,
+      district: true,
+      rooms: true,
+    },
+  });
+  if (!base) return res.json({ items: [] });
+
+  const where = {
+    status: "ACTIVE",
+    id: { not: base.id },
+    deal: base.deal,
+    propertyType: base.propertyType,
+  };
+  // Сначала пробуем по району; если ничего — fallback по комнатам/типу.
+  if (base.district) where.district = base.district;
+
+  let items = await prisma.listing.findMany({
+    where,
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          verifiedLevel: true,
+          ratingAvg: true,
+          ratingCount: true,
+          wechatId: true,
+          isAgency: true,
+          agencyName: true,
+          agencySlug: true,
+          agencyLogo: true,
+        },
+      },
+      complex: {
+        include: {
+          developer: { select: { id: true, slug: true, name: true, verified: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 6,
+  });
+
+  if (items.length < 4 && base.district) {
+    const more = await prisma.listing.findMany({
+      where: {
+        status: "ACTIVE",
+        id: { not: base.id },
+        deal: base.deal,
+        propertyType: base.propertyType,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            verifiedLevel: true,
+            ratingAvg: true,
+            ratingCount: true,
+            wechatId: true,
+            isAgency: true,
+            agencyName: true,
+            agencySlug: true,
+            agencyLogo: true,
+          },
+        },
+        complex: {
+          include: {
+            developer: { select: { id: true, slug: true, name: true, verified: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+    });
+    const seen = new Set(items.map((i) => i.id));
+    for (const m of more) {
+      if (items.length >= 6) break;
+      if (!seen.has(m.id)) items.push(m);
+    }
+  }
+
+  res.json({
+    items: items.map((l) => listingToPublic(l, baseUrl, { lang })),
   });
 });
 
@@ -247,6 +290,10 @@ router.get("/:id", authOptional, async (req, res) => {
           ratingCount: true,
           wechatId: true,
           createdAt: true,
+          isAgency: true,
+          agencyName: true,
+          agencySlug: true,
+          agencyLogo: true,
         },
       },
       complex: {
@@ -268,7 +315,10 @@ router.get("/:id", authOptional, async (req, res) => {
   }
   const includeFlags =
     req.user && (req.user.role === "ADMIN" || req.user.id === listing.userId);
-  res.json({ ...listingToPublic(listing, baseUrl, { includeFlags }), isFavorite });
+  const lang = resolveListingLang(req.query.lang);
+  let pub = listingToPublic(listing, baseUrl, { includeFlags, lang });
+  pub = await enrichListingLiveTranslate(listing, pub, lang);
+  res.json({ ...pub, isFavorite });
 });
 
 router.post(

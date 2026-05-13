@@ -25,6 +25,9 @@ import complexesRoutes from "./routes/complexes.js";
 import reservationsRoutes from "./routes/reservations.js";
 import roommatesRoutes from "./routes/roommates.js";
 import buildingsRoutes from "./routes/buildings.js";
+import agenciesRoutes from "./routes/agencies.js";
+import callbacksRoutes from "./routes/callbacks.js";
+import promoRoutes from "./routes/promo.js";
 import i18nRoutes from "./routes/i18n.js";
 import qrRoutes from "./routes/qr.js";
 import zhRoutes from "./routes/zh.js";
@@ -87,6 +90,7 @@ app.use(
           "https://cdn.jsdelivr.net",
           "https://accounts.google.com",
           "https://www.gstatic.com",
+          "https://connect.facebook.net",
         ],
         "script-src-elem": [
           "'self'",
@@ -95,6 +99,7 @@ app.use(
           "https://cdn.jsdelivr.net",
           "https://accounts.google.com",
           "https://www.gstatic.com",
+          "https://connect.facebook.net",
         ],
         "connect-src": [
           "'self'",
@@ -103,6 +108,8 @@ app.use(
           "https://www.google.com",
           "https://www.gstatic.com",
           "https://accounts.google.com",
+          "https://graph.facebook.com",
+          "https://connect.facebook.net",
           "stun:",
           "stuns:",
         ],
@@ -130,12 +137,39 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "apart-kg-api" });
 });
 
+function getCurrencyRates() {
+  const defaults = {
+    base: "KGS",
+    rates: { KGS: 1, USD: 87.5, EUR: 95, CNY: 12.1, RUB: 0.94 },
+    updatedAt: null,
+  };
+  const raw = process.env.CURRENCY_RATES;
+  if (!raw) return defaults;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") {
+      return {
+        base: String(parsed.base || defaults.base).toUpperCase(),
+        rates: { ...defaults.rates, ...(parsed.rates || {}) },
+        updatedAt: parsed.updatedAt || null,
+      };
+    }
+  } catch {
+    /* ignore */
+  }
+  return defaults;
+}
+
 app.get("/api/config", (_req, res) => {
   res.json({
     recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || "",
+    recaptchaVersion: (process.env.RECAPTCHA_VERSION || "v3").toLowerCase(),
     googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+    facebookAppId: process.env.FACEBOOK_APP_ID || "",
+    appleSignInEnabled: Boolean(process.env.APPLE_SERVICE_ID),
     vapidPublicKey: getVapidPublicKey(),
     featureFlags: getFeatureFlags(),
+    currency: getCurrencyRates(),
   });
 });
 
@@ -157,6 +191,9 @@ app.use("/api/complexes", complexesRoutes);
 app.use("/api/reservations", reservationsRoutes);
 app.use("/api/roommates", roommatesRoutes);
 app.use("/api/buildings", buildingsRoutes);
+app.use("/api/agencies", agenciesRoutes);
+app.use("/api/callbacks", callbacksRoutes);
+app.use("/api/promo", promoRoutes);
 app.use("/api/i18n", i18nRoutes);
 app.use("/api/qr", qrRoutes);
 app.use("/api/zh", zhRoutes);

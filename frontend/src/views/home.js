@@ -4,8 +4,11 @@ import { esc, plural, pickCardImage, toast, attachCardImageFallback } from "../u
 import { openDetail } from "./detail.js";
 import { openAuth } from "./auth.js";
 import { refreshMapMarkers } from "./map.js";
+import { setView } from "../router.js";
 import { trustBadgeHtml } from "./trustBadge.js";
 import { pickI18n, t, getCurrentLang } from "../i18n.js";
+import { priceInCurrentCurrency } from "../currency.js";
+import { loadHomeSections, setHomeSectionsVisibility, isHomeStreamMode } from "./homeSections.js";
 
 export function formatListingCount(n) {
   const lang = getCurrentLang();
@@ -29,6 +32,9 @@ export function buildQuery() {
   const p = new URLSearchParams();
   if (state.filters.deal !== "all") p.set("deal", state.filters.deal);
   if (state.filters.type !== "all") p.set("type", state.filters.type);
+  if (state.filters.rooms && state.filters.rooms !== "all") {
+    p.set("rooms", state.filters.rooms);
+  }
   if (state.filters.search.trim()) p.set("search", state.filters.search.trim());
   if (state.filters.verifiedOnly) p.set("verifiedOnly", "true");
   if (state.filters.has360) p.set("has360", "true");
@@ -38,11 +44,153 @@ export function buildQuery() {
   return q ? `?${q}` : "";
 }
 
+function skeletonListHtml(n = 6) {
+  const card = `<li><article class="card skeleton-card">
+    <div class="skeleton skeleton-card__img"></div>
+    <div class="skeleton-card__body">
+      <div class="skeleton skeleton-card__line skeleton-card__line--lg"></div>
+      <div class="skeleton skeleton-card__line skeleton-card__line--md"></div>
+      <div class="skeleton skeleton-card__line skeleton-card__line--sm"></div>
+    </div>
+  </article></li>`;
+  return new Array(n).fill(card).join("");
+}
+
+function setListSkeleton() {
+  const list = document.getElementById("list");
+  if (list) list.innerHTML = skeletonListHtml(6);
+  const counter = document.getElementById("resultsCount");
+  if (counter) counter.textContent = "…";
+}
+
+export function hasActiveFilters() {
+  const f = state.filters;
+  return (
+    f.deal !== "all" ||
+    f.type !== "all" ||
+    (f.rooms && f.rooms !== "all") ||
+    f.search.trim() !== "" ||
+    f.verifiedOnly ||
+    f.has360 ||
+    f.hasVideo ||
+    f.liveAvailable
+  );
+}
+
+export function resetHomeFilters() {
+  state.filters.deal = "all";
+  state.filters.type = "all";
+  state.filters.rooms = "all";
+  state.filters.search = "";
+  state.filters.verifiedOnly = false;
+  state.filters.has360 = false;
+  state.filters.hasVideo = false;
+  state.filters.liveAvailable = false;
+
+  document.querySelectorAll("#view-home .segment__btn").forEach((b) => {
+    b.classList.toggle("is-active", b.getAttribute("data-deal") === "all");
+  });
+  document.querySelectorAll("#view-home .chips:not(.chips--rooms) .chip").forEach((c) => {
+    c.classList.toggle("is-active", c.getAttribute("data-type") === "all");
+  });
+  document.querySelectorAll("#roomsChips .chip").forEach((c) => {
+    c.classList.toggle("is-active", c.getAttribute("data-rooms") === "all");
+  });
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) searchInput.value = "";
+  ["filterVerifiedOnly", "filter360", "filterVideo", "filterLive"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && "checked" in el) el.checked = false;
+  });
+}
+
+let lastLoadFailed = false;
+
 export async function loadListings() {
-  const { items } = await api(`/listings${buildQuery()}`);
-  state.items = items;
-  renderHomeList();
-  if (state.map && state.markersLayer) refreshMapMarkers();
+  setListSkeleton();
+  if (isHomeStreamMode()) {
+    void loadHomeSections();
+  } else {
+    setHomeSectionsVisibility(false);
+  }
+  try {
+    const { items } = await api(`/listings${buildQuery()}`);
+    state.items = items;
+    lastLoadFailed = false;
+    renderHomeList();
+    if (state.map && state.markersLayer) refreshMapMarkers();
+  } catch (err) {
+    lastLoadFailed = true;
+    state.items = [];
+    renderHomeError(err?.message || "");
+  }
+}
+
+function renderHomeError(message) {
+  const list = document.getElementById("list");
+  if (!list) return;
+  const title = t("home.error.title", "Не удалось загрузить объявления");
+  const text =
+    message && message.length < 160
+      ? message
+      : t("home.error.text", "Проверьте подключение к интернету и попробуйте ещё раз.");
+  list.innerHTML = `<li class="state-block-li"><div class="state-block">
+    <div class="state-block__icon" aria-hidden="true">!</div>
+    <h3 class="state-block__title">${esc(title)}</h3>
+    <p class="state-block__text">${esc(text)}</p>
+    <div class="state-block__actions">
+      <button type="button" class="btn btn--primary" data-retry-listings>${esc(
+        t("home.error.retry", "Повторить")
+      )}</button>
+    </div>
+  </div></li>`;
+  list.querySelector("[data-retry-listings]")?.addEventListener("click", () => {
+    loadListings();
+  });
+  const counter = document.getElementById("resultsCount");
+  if (counter) counter.textContent = "";
+}
+
+function priceBlockHtml(it) {
+  const conv = priceInCurrentCurrency(it.price, it.currency);
+  if (conv.converted && conv.originalFormatted) {
+    return `<p class="card__price">
+      ${esc(conv.formatted)} <small>${esc(conv.symbol)}</small>
+      <span class="card__price-alt">${esc(conv.originalFormatted)} <small>${esc(
+        conv.originalSymbol
+      )}</small></span>
+    </p>`;
+  }
+  return `<p class="card__price">${esc(conv.formatted || it.price)} <small>${esc(
+    conv.symbol || it.currency
+  )}</small></p>`;
+}
+
+function listingBadgesHtml(it) {
+  const parts = [];
+  if (it.urgent) {
+    parts.push(
+      `<span class="badge badge--urgent">${esc(t("badge.urgent", "Срочно"))}</span>`
+    );
+  }
+  if (it.vipUntil && new Date(it.vipUntil) > new Date()) {
+    parts.push(`<span class="badge badge--vip">VIP</span>`);
+  }
+  if (it.topUntil && new Date(it.topUntil) > new Date()) {
+    parts.push(`<span class="badge badge--top">TOP</span>`);
+  }
+  if (it.premiumUntil && new Date(it.premiumUntil) > new Date()) {
+    parts.push(
+      `<span class="badge badge--premium">${esc(t("badge.premium", "Премиум"))}</span>`
+    );
+  }
+  if (it.user?.isAgency || it.agency) {
+    parts.push(
+      `<span class="badge badge--agency">${esc(t("badge.agency", "Агентство"))}</span>`
+    );
+  }
+  if (!parts.length) return "";
+  return `<div class="card__badges">${parts.join("")}</div>`;
 }
 
 export function cardHtml(it) {
@@ -55,23 +203,27 @@ export function cardHtml(it) {
   const heart = it.isFavorite ? "❤️" : "🤍";
   const tour360 = t("card.tour.360", "360°");
   const tourVideo = t("card.tour.video", "видео");
+  const title = pickI18n(it.titleI18n, it.title);
   return `<li>
-    <article class="card" data-id="${esc(it.id)}">
+    <article class="card" data-id="${esc(it.id)}" tabindex="0" role="link" aria-label="${esc(title)}">
       <div class="card__img-wrap">
         <img class="card__img" src="${esc(img)}" alt="" loading="lazy" />
         <span class="card__badge ${it.deal === "rent" ? "card__badge--rent" : "card__badge--sale"}">${esc(tag)}</span>
         ${it.has360 ? `<span class="tour-icon">🧭 ${esc(tour360)}</span>` : it.hasVideo ? `<span class="tour-icon">🎬 ${esc(tourVideo)}</span>` : ""}
-        <button type="button" class="card__fav ${liked}" data-fav="${esc(it.id)}">${heart}</button>
+        <button type="button" class="card__fav ${liked}" data-fav="${esc(it.id)}" aria-label="${esc(
+          t("card.favorite", "В избранное")
+        )}">${heart}</button>
       </div>
       <div class="card__body">
-        <p class="card__price">${esc(it.price)} <small>${esc(it.currency)}</small></p>
-        <h2 class="card__title">${esc(pickI18n(it.titleI18n, it.title))}</h2>
+        ${priceBlockHtml(it)}
+        <h2 class="card__title">${esc(title)}</h2>
         <p class="card__meta">
           <span>${esc(it.district)}</span>
           <span>${esc(it.rooms)}</span>
           <span>${esc(it.area)}</span>
           <span>${esc(it.floor)}</span>
         </p>
+        ${listingBadgesHtml(it)}
         ${trustBadgeHtml(it)}
       </div>
     </article>
@@ -82,11 +234,18 @@ export function bindCards() {
   const list = document.getElementById("list");
   if (!list) return;
   list.querySelectorAll(".card").forEach((card) => {
-    card.addEventListener("click", (e) => {
+    const openFromCard = (e) => {
       if (e.target.closest(".card__fav")) return;
       const id = card.getAttribute("data-id");
       const it = state.items.find((x) => x.id === id);
       if (it) openDetail(it);
+    };
+    card.addEventListener("click", openFromCard);
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openFromCard(e);
+      }
     });
   });
   list.querySelectorAll(".card__fav").forEach((btn) => {
@@ -116,12 +275,41 @@ export function bindCards() {
 }
 
 export function renderHomeList() {
+  if (lastLoadFailed) return;
   const list = document.getElementById("list");
   if (!list) return;
   const n = state.items.length;
   const counter = document.getElementById("resultsCount");
   if (counter) {
     counter.textContent = formatListingCount(n);
+  }
+  if (n === 0) {
+    const active = hasActiveFilters();
+    const title = active
+      ? t("home.empty.filters.title", "Ничего не найдено")
+      : t("home.empty.title", "Пока нет объявлений");
+    const text = active
+      ? t(
+          "home.empty.filters.text",
+          "Под выбранные фильтры объявлений нет. Сбросьте часть условий или измените запрос."
+        )
+      : t("home.empty.text", "Скоро здесь появятся новые объявления — загляните позже.");
+    const action = active
+      ? `<button type="button" class="btn btn--primary" data-reset-filters>${esc(
+          t("home.empty.reset", "Сбросить фильтры")
+        )}</button>`
+      : "";
+    list.innerHTML = `<li class="state-block-li"><div class="state-block">
+      <div class="state-block__icon" aria-hidden="true">🏠</div>
+      <h3 class="state-block__title">${esc(title)}</h3>
+      <p class="state-block__text">${esc(text)}</p>
+      <div class="state-block__actions">${action}</div>
+    </div></li>`;
+    list.querySelector("[data-reset-filters]")?.addEventListener("click", () => {
+      resetHomeFilters();
+      loadListings();
+    });
+    return;
   }
   list.innerHTML = state.items.map(cardHtml).join("");
   bindCards();
@@ -142,14 +330,29 @@ export function bindHomeFilters() {
       loadListings();
     });
   }
-  const chips = document.querySelector("#view-home .chips");
+  const chips = document.querySelector("#view-home .chips:not(.chips--rooms)");
   if (chips) {
     chips.addEventListener("click", (e) => {
       const c = e.target.closest(".chip[data-type]");
       if (!c) return;
-      document.querySelectorAll("#view-home .chip").forEach((x) => x.classList.remove("is-active"));
+      chips
+        .querySelectorAll(".chip")
+        .forEach((x) => x.classList.remove("is-active"));
       c.classList.add("is-active");
       state.filters.type = c.getAttribute("data-type");
+      loadListings();
+    });
+  }
+  const roomsChips = document.getElementById("roomsChips");
+  if (roomsChips) {
+    roomsChips.addEventListener("click", (e) => {
+      const c = e.target.closest(".chip[data-rooms]");
+      if (!c) return;
+      roomsChips
+        .querySelectorAll(".chip")
+        .forEach((x) => x.classList.remove("is-active"));
+      c.classList.add("is-active");
+      state.filters.rooms = c.getAttribute("data-rooms");
       loadListings();
     });
   }
@@ -185,4 +388,10 @@ export function bindHomeFilters() {
       state.filters.liveAvailable = cbLive.checked;
       loadListings();
     });
+  document.getElementById("btnShowOnMap")?.addEventListener("click", () => {
+    if (!state.items?.length) {
+      toast(t("home.error.title", "Не удалось загрузить объявления"));
+    }
+    setView("map");
+  });
 }

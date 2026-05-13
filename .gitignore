@@ -12,7 +12,13 @@ backend/dev.db
 backend/dev.db-journal
 backend/data/*.db
 backend/data/*.db-journal
+backend/prisma/*.db
+backend/prisma/*.db-journal
 backend/.env
+
+# Локальные логи / временные дампы терминала
+logs
+*.log
 
 # OS / IDE
 .DS_Store
