@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { prisma } from "../prisma.js";
 import { authOptional } from "../middleware/auth.js";
-import { listingToPublic } from "../services/listingPublic.js";
 import { resolveListingLang } from "../utils/listingLang.js";
+import { mapListingsEnriched } from "../services/listingEnrich.js";
 
 const router = Router();
 
@@ -132,12 +132,12 @@ router.get("/:slug", authOptional, async (req, res) => {
     favoriteIds = new Set(favs.map((f) => f.listingId));
   }
 
+  const enriched = await mapListingsEnriched(listings, baseUrl, lang, (l) => ({
+    isFavorite: favoriteIds.has(l.id),
+  }));
   res.json({
     agency: publicAgency(agent, { listingsCount: listings.length }),
-    listings: listings.map((l) => ({
-      ...listingToPublic(l, baseUrl, { lang }),
-      isFavorite: favoriteIds.has(l.id),
-    })),
+    listings: enriched,
   });
 });
 

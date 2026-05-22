@@ -1,6 +1,7 @@
 import { state, appConfig, setToken } from "../state.js";
 import { api } from "../api.js";
 import { toast } from "../utils.js";
+import { t, getCurrentLang } from "../i18n.js";
 import { setView } from "../router.js";
 import { loadListings } from "./home.js";
 import { loadFavorites } from "./favorites.js";
@@ -18,7 +19,7 @@ export function openAuth(mode) {
     m.hidden = false;
     if (mode) showAuthForms(mode);
     else showAuthForms("login");
-    if (isRecaptchaV2()) void mountRecaptchaV2();
+    if (appConfig.recaptchaSiteKey && isRecaptchaV2()) void mountRecaptchaV2();
   }
 }
 
@@ -29,6 +30,13 @@ export function closeAuth() {
 
 function isRecaptchaV2() {
   return (appConfig.recaptchaVersion || "v3").toLowerCase() === "v2";
+}
+
+function requireRecaptchaV2Token(token) {
+  if (!appConfig.recaptchaSiteKey || !isRecaptchaV2()) return true;
+  if (token && String(token).length > 0) return true;
+  toast(t("auth.recaptcha.required", "Отметьте «Я не робот» и попробуйте снова."));
+  return false;
 }
 
 function loadRecaptchaScriptV3(siteKey) {
@@ -68,7 +76,7 @@ async function mountRecaptchaV2() {
       } else {
         recaptchaV2WidgetId = window.grecaptcha.render(host, {
           sitekey: appConfig.recaptchaSiteKey,
-          theme: document.documentElement.dataset.theme === "light" ? "light" : "dark",
+          theme: document.body.getAttribute("data-theme") === "light" ? "light" : "dark",
         });
       }
       resolve();
@@ -173,9 +181,25 @@ async function handleGoogleCredential(credential) {
 }
 
 export async function initGoogleSignIn() {
-  if (!appConfig.googleClientId) return;
   const wrap = document.getElementById("authGoogleWrap");
+  const hint = document.getElementById("authGoogleHint");
+  const btnHost = document.getElementById("googleSignInBtn");
   if (!wrap) return;
+
+  if (!appConfig.googleClientId) {
+    wrap.hidden = false;
+    if (hint) {
+      hint.hidden = false;
+      hint.textContent = t(
+        "auth.google.setup",
+        "Вход через Google: добавьте GOOGLE_CLIENT_ID в переменные окружения сервера и перезапустите API."
+      );
+    }
+    if (btnHost) btnHost.innerHTML = "";
+    return;
+  }
+
+  if (hint) hint.hidden = true;
   wrap.hidden = false;
   await new Promise((resolve, reject) => {
     const s = document.createElement("script");
@@ -195,12 +219,14 @@ export async function initGoogleSignIn() {
   });
   const btn = document.getElementById("googleSignInBtn");
   if (btn) {
+    const localeMap = { ru: "ru", kg: "ky", en: "en", zh: "zh_CN" };
+    const locale = localeMap[getCurrentLang()] || "ru";
     window.google.accounts.id.renderButton(btn, {
       theme: "outline",
       size: "large",
       width: "100%",
       text: "continue_with",
-      locale: "ru",
+      locale,
     });
   }
 }
@@ -208,7 +234,8 @@ export async function initGoogleSignIn() {
 function initFacebookLogin() {
   if (!appConfig.facebookAppId) return;
   const btn = document.getElementById("btnFacebookLogin");
-  if (!btn) return;
+  if (!btn || btn.dataset.fbBound === "1") return;
+  btn.dataset.fbBound = "1";
   btn.hidden = false;
   btn.addEventListener("click", () => {
     if (!window.FB) {
@@ -234,9 +261,32 @@ function initFacebookLogin() {
   });
 }
 
+/** Показать подсказку, если Facebook не настроен на сервере (без SDK). */
+export function initFacebookAuthUI() {
+  const hint = document.getElementById("authFacebookHint");
+  const btn = document.getElementById("btnFacebookLogin");
+  if (appConfig.facebookAppId) {
+    if (hint) hint.hidden = true;
+    return;
+  }
+  if (btn) btn.hidden = true;
+  if (hint) {
+    hint.hidden = false;
+    hint.textContent = t(
+      "auth.facebook.setup",
+      "Вход через Facebook: задайте FACEBOOK_APP_ID и корректный CLIENT_ORIGIN (HTTPS) в настройках сервера, затем перезапустите API."
+    );
+  }
+}
+
 export async function initFacebookSdk() {
   if (!appConfig.facebookAppId || window.__fbSdkLoaded) return;
   window.__fbSdkLoaded = true;
+  if (!document.getElementById("fb-root")) {
+    const root = document.createElement("div");
+    root.id = "fb-root";
+    document.body.insertBefore(root, document.body.firstChild);
+  }
   await new Promise((resolve, reject) => {
     window.fbAsyncInit = () => {
       try {
@@ -294,6 +344,7 @@ export function bindAuthForms() {
       const fd = new FormData(e.target);
       try {
         const recaptchaToken = await getRecaptchaToken("login");
+        if (!requireRecaptchaV2Token(recaptchaToken)) return;
         const { token, user } = await api("/auth/login", {
           method: "POST",
           body: {
@@ -315,6 +366,7 @@ export function bindAuthForms() {
       const fd = new FormData(e.target);
       try {
         const recaptchaToken = await getRecaptchaToken("register");
+        if (!requireRecaptchaV2Token(recaptchaToken)) return;
         const { token, user } = await api("/auth/register", {
           method: "POST",
           body: {
@@ -339,6 +391,7 @@ export function bindAuthForms() {
       const fd = new FormData(e.target);
       try {
         const recaptchaToken = await getRecaptchaToken("forgot");
+        if (!requireRecaptchaV2Token(recaptchaToken)) return;
         const r = await api("/auth/forgot-password", {
           method: "POST",
           body: { email: fd.get("email"), recaptchaToken },
@@ -358,6 +411,7 @@ export function bindAuthForms() {
       const fd = new FormData(e.target);
       try {
         const recaptchaToken = await getRecaptchaToken("reset");
+        if (!requireRecaptchaV2Token(recaptchaToken)) return;
         const r = await api("/auth/reset-password", {
           method: "POST",
           body: {

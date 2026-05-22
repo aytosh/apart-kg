@@ -8,6 +8,20 @@ const SYMBOL = {
   RUB: "₽",
 };
 
+/** Приводит строку валюты из объявления к ISO-коду для курсов (в БД часто «сом / мес», «$»). */
+export function normalizeListingCurrency(raw) {
+  const s = String(raw ?? "").trim();
+  if (!s) return "KGS";
+  const low = s.toLowerCase();
+  if (/\$|usd/i.test(s)) return "USD";
+  if (/€|eur/i.test(s)) return "EUR";
+  if (/¥|cny|元|人民币/i.test(s)) return "CNY";
+  if (/₽|rub|руб/i.test(s)) return "RUB";
+  if (/kgs/i.test(s)) return "KGS";
+  if (low.includes("сом") || low.includes("som") || /\bkgs\b/i.test(s)) return "KGS";
+  return "KGS";
+}
+
 /**
  * Возвращает курс «1 единица валюты `code` = ? KGS» из конфига.
  * Базовая валюта в конфиге — KGS, поэтому rate(USD) = 87.5 значит 1 USD = 87.5 KGS.
@@ -62,7 +76,7 @@ export function currencySymbol(code) {
  */
 export function priceInCurrentCurrency(rawPrice, rawCurrency) {
   const target = getCurrentCurrency();
-  const from = String(rawCurrency || "KGS").toUpperCase();
+  const from = normalizeListingCurrency(rawCurrency);
   const num = parseAmount(rawPrice);
   if (num == null) {
     return {

@@ -3,10 +3,11 @@ import { body, query, validationResult } from "express-validator";
 import { prisma } from "../prisma.js";
 import { authOptional, authRequired } from "../middleware/auth.js";
 import { auditListing } from "../services/trust.js";
-import { translateAll, hasProvider, translateText } from "../services/translate.js";
+import { translateAll, hasProvider } from "../services/translate.js";
 import { listingToPublic } from "../services/listingPublic.js";
-import { parseI18nMap, resolveListingLang } from "../utils/listingLang.js";
+import { resolveListingLang } from "../utils/listingLang.js";
 import { listingMatchesRooms, normalizeRoomsFilter } from "../utils/rooms.js";
+import { enrichListingLiveTranslate, mapListingsEnriched } from "../services/listingEnrich.js";
 
 const router = Router();
 
@@ -21,40 +22,6 @@ const typeMap = {
   dacha: "DACHA",
   parking: "PARKING",
 };
-
-async function enrichListingLiveTranslate(listing, pub, lang) {
-  if (lang === "ru" || !hasProvider()) return pub;
-  const ti = parseI18nMap(listing.titleI18n);
-  const di = parseI18nMap(listing.descriptionI18n);
-  const out = { ...pub };
-  const jobs = [];
-  if (!ti?.[lang]) {
-    jobs.push(translateText(listing.title, lang).then((x) => {
-      out.title = x;
-    }));
-  }
-  if (listing.description && !di?.[lang]) {
-    jobs.push(translateText(listing.description, lang).then((x) => {
-      out.description = x;
-    }));
-  }
-  for (const [key, val] of [
-    ["district", listing.district],
-    ["rooms", listing.rooms],
-    ["area", listing.area],
-    ["floor", listing.floor],
-    ["currency", listing.currency],
-  ]) {
-    if (!val) continue;
-    jobs.push(
-      translateText(String(val), lang).then((x) => {
-        out[key] = x;
-      })
-    );
-  }
-  await Promise.all(jobs);
-  return out;
-}
 
 router.get("/", authOptional, async (req, res) => {
   const baseUrl = `${req.protocol}://${req.get("host")}`;
@@ -171,12 +138,10 @@ router.get("/", authOptional, async (req, res) => {
     favoriteIds = new Set(favs.map((f) => f.listingId));
   }
 
-  res.json({
-    items: listings.map((l) => ({
-      ...listingToPublic(l, baseUrl, { lang }),
-      isFavorite: favoriteIds.has(l.id),
-    })),
-  });
+  const items = await mapListingsEnriched(listings, baseUrl, lang, (l) => ({
+    isFavorite: favoriteIds.has(l.id),
+  }));
+  res.json({ items });
 });
 
 router.get("/:id/similar", authOptional, async (req, res) => {
@@ -269,9 +234,8 @@ router.get("/:id/similar", authOptional, async (req, res) => {
     }
   }
 
-  res.json({
-    items: items.map((l) => listingToPublic(l, baseUrl, { lang })),
-  });
+  const enriched = await mapListingsEnriched(items, baseUrl, lang, () => ({}));
+  res.json({ items: enriched });
 });
 
 router.get("/:id", authOptional, async (req, res) => {

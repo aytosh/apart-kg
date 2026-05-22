@@ -52,6 +52,15 @@ const SUPPORTED_CURRENCIES = ["KGS", "USD", "EUR", "CNY", "RUB"];
 export function getCurrentCurrency() {
   const stored = localStorage.getItem(CURRENCY_KEY);
   if (stored && SUPPORTED_CURRENCIES.includes(stored)) return stored;
+  const u = String(stored || "").toUpperCase();
+  const low = String(stored || "").trim().toLowerCase();
+  if (u === "COM" || low === "com" || low === "сом" || low === "som") {
+    localStorage.setItem(CURRENCY_KEY, "KGS");
+    return "KGS";
+  }
+  if (stored && !SUPPORTED_CURRENCIES.includes(stored)) {
+    localStorage.removeItem(CURRENCY_KEY);
+  }
   return "KGS";
 }
 

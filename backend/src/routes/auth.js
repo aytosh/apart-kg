@@ -46,15 +46,13 @@ router.post(
     }
 
     if (process.env.RECAPTCHA_SECRET_KEY) {
-
-      const v = await verifyRecaptcha(req.body.recaptchaToken);
-
-      if (!v.ok) {
-
-        return res.status(400).json({ error: "Проверка reCAPTCHA не пройдена. Обновите страницу и попробуйте снова." });
-
+      if (!String(req.body.recaptchaToken || "").trim()) {
+        return res.status(400).json({ error: "Пройдите проверку reCAPTCHA." });
       }
-
+      const v = await verifyRecaptcha(req.body.recaptchaToken);
+      if (!v.ok) {
+        return res.status(400).json({ error: "Проверка reCAPTCHA не пройдена. Обновите страницу и попробуйте снова." });
+      }
     }
 
     const { email, password, name, phone } = req.body;
@@ -112,15 +110,13 @@ router.post(
     }
 
     if (process.env.RECAPTCHA_SECRET_KEY) {
-
-      const v = await verifyRecaptcha(req.body.recaptchaToken);
-
-      if (!v.ok) {
-
-        return res.status(400).json({ error: "Проверка reCAPTCHA не пройдена. Обновите страницу и попробуйте снова." });
-
+      if (!String(req.body.recaptchaToken || "").trim()) {
+        return res.status(400).json({ error: "Пройдите проверку reCAPTCHA." });
       }
-
+      const v = await verifyRecaptcha(req.body.recaptchaToken);
+      if (!v.ok) {
+        return res.status(400).json({ error: "Проверка reCAPTCHA не пройдена. Обновите страницу и попробуйте снова." });
+      }
     }
 
     const { email, password } = req.body;
@@ -281,10 +277,12 @@ router.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
     if (process.env.RECAPTCHA_SECRET_KEY) {
+      if (!String(req.body.recaptchaToken || "").trim()) {
+        return res.status(400).json({ error: "Пройдите проверку reCAPTCHA." });
+      }
       const v = await verifyRecaptcha(req.body.recaptchaToken);
       if (!v.ok) return res.status(400).json({ error: "Проверка reCAPTCHA не пройдена." });
     }
-    const email = req.body.email;
     const user = await prisma.user.findUnique({ where: { email } });
     const msg = {
       ok: true,
@@ -318,6 +316,9 @@ router.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
     if (process.env.RECAPTCHA_SECRET_KEY) {
+      if (!String(req.body.recaptchaToken || "").trim()) {
+        return res.status(400).json({ error: "Пройдите проверку reCAPTCHA." });
+      }
       const v = await verifyRecaptcha(req.body.recaptchaToken);
       if (!v.ok) return res.status(400).json({ error: "Проверка reCAPTCHA не пройдена." });
     }

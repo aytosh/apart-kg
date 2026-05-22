@@ -1,5 +1,5 @@
 /* Apart.kg — PWA: кэш статики, кэш последних 50 объявлений, push-уведомления */
-const CACHE = "apart-kg-v4";
+const CACHE = "apart-kg-v5";
 const LISTING_CACHE = "apart-kg-listings-v1";
 const LISTING_LIMIT = 50;
 const PRECACHE = [

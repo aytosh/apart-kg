@@ -1,24 +1,24 @@
 /* === Design tokens (Apart.kg) ===
-   Acent: emerald/teal — доверие, недвижимость
+   Акцент: циан / прохладный сланец
    Шкала: 4 / 8 / 12 / 16 / 24 / 32 / 48
    Радиусы: 8 / 12 / 16 / 20
 */
 :root {
-  /* Цвета (тёмная тема — по умолчанию) */
-  --bg: #0b1310;
-  --surface: #11201b;
-  --surface2: #172a23;
+  /* Цвета (тёмная тема — по умолчанию): прохладный сланец + циан */
+  --bg: #0a0f14;
+  --surface: #121a22;
+  --surface2: #18232e;
   --border: rgba(255, 255, 255, 0.08);
-  --text: #eef7f3;
-  --muted: #9bb3aa;
-  --accent: #14b8a6;
-  --accent-hover: #2dd4bf;
-  --accent-rgb: 20, 184, 166;
-  --accent-soft: rgba(var(--accent-rgb), 0.16);
-  --accent-line: rgba(var(--accent-rgb), 0.38);
+  --text: #e8f1f8;
+  --muted: #8da0b3;
+  --accent: #0ea5e9;
+  --accent-hover: #38bdf8;
+  --accent-rgb: 14, 165, 233;
+  --accent-soft: rgba(var(--accent-rgb), 0.14);
+  --accent-line: rgba(var(--accent-rgb), 0.35);
   --success: #34d399;
-  --warning: #f59e0b;
-  --danger: #f87171;
+  --warning: #fbbf24;
+  --danger: #fb7185;
 
   /* Скругления */
   --radius: 16px;
@@ -64,20 +64,20 @@
 }
 
 body[data-theme="light"] {
-  --bg: #f5fbf8;
+  --bg: #f4f8fc;
   --surface: #ffffff;
-  --surface2: #eef7f2;
-  --border: rgba(10, 80, 60, 0.12);
-  --text: #0d2620;
-  --muted: #5b7a72;
-  --accent: #0f9c8c;
-  --accent-hover: #0c8576;
-  --accent-rgb: 15, 156, 140;
+  --surface2: #e8f2fa;
+  --border: rgba(15, 60, 90, 0.1);
+  --text: #0c1520;
+  --muted: #5c6d80;
+  --accent: #0284c7;
+  --accent-hover: #0369a1;
+  --accent-rgb: 2, 132, 199;
   --accent-soft: rgba(var(--accent-rgb), 0.12);
-  --accent-line: rgba(var(--accent-rgb), 0.3);
-  --shadow-sm: 0 2px 8px rgba(15, 80, 60, 0.08);
-  --shadow: 0 8px 28px rgba(15, 80, 60, 0.12);
-  --shadow-lg: 0 16px 48px rgba(15, 80, 60, 0.18);
+  --accent-line: rgba(var(--accent-rgb), 0.28);
+  --shadow-sm: 0 2px 8px rgba(15, 60, 90, 0.06);
+  --shadow: 0 8px 28px rgba(15, 60, 90, 0.1);
+  --shadow-lg: 0 16px 48px rgba(15, 60, 90, 0.14);
 }
 
 *,
@@ -194,14 +194,14 @@ body {
 }
 
 .header__name {
-  background: linear-gradient(135deg, #faf5ff 0%, #e9d5ff 55%, #c084fc 100%);
+  background: linear-gradient(135deg, #e0f2fe 0%, #7dd3fc 45%, #0ea5e9 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .header__tld {
-  color: #a78bfa;
+  color: #38bdf8;
   font-weight: 600;
 }
 
@@ -352,6 +352,34 @@ body {
   display: flex;
   gap: 6px;
   padding: 8px 16px 4px;
+}
+
+@media (max-width: 520px) {
+  .segment {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    flex-wrap: nowrap;
+    padding-left: max(12px, env(safe-area-inset-left, 0));
+    padding-right: max(12px, env(safe-area-inset-right, 0));
+    scrollbar-width: none;
+  }
+  .segment::-webkit-scrollbar {
+    display: none;
+  }
+  .segment__btn {
+    flex: 0 0 auto;
+    min-width: 28%;
+    scroll-snap-align: start;
+  }
+  .chips {
+    padding-left: max(12px, env(safe-area-inset-left, 0));
+    padding-right: max(12px, env(safe-area-inset-right, 0));
+  }
+  .header__inner {
+    padding-left: max(12px, env(safe-area-inset-left, 0));
+    padding-right: max(12px, env(safe-area-inset-right, 0));
+  }
 }
 
 .segment__btn {
@@ -1575,6 +1603,13 @@ body[data-theme="dark"] .rent-row--ok {
   min-height: 280px;
 }
 
+/* Leaflet: глобальные правила img { max-width:100% } ломают тайлы */
+.leaflet-tile-pane img,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+  max-width: none !important;
+}
+
 .map-pin {
   background: transparent !important;
   border: none !important;
@@ -1585,7 +1620,7 @@ body[data-theme="dark"] .rent-row--ok {
   height: 14px;
   border-radius: 50%;
   margin: 3px;
-  background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 55%, #0369a1 100%);
   border: 2px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 2px 12px rgba(var(--accent-rgb), 0.45);
 }
@@ -2425,6 +2460,7 @@ html.auth-calm .modal__panel--auth {
   }
 }
 
+.badge-unread {
   display: inline-block;
   min-width: 18px;
   padding: 2px 6px;

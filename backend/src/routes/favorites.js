@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { prisma } from "../prisma.js";
 import { authRequired } from "../middleware/auth.js";
-import { listingToPublic } from "../services/listingPublic.js";
 import { resolveListingLang } from "../utils/listingLang.js";
+import { mapListingsEnriched } from "../services/listingEnrich.js";
 
 const router = Router();
 
@@ -39,13 +39,8 @@ router.get("/", authRequired, async (req, res) => {
     },
     orderBy: { createdAt: "desc" },
   });
-  const items = favs
-    .map((f) => f.listing)
-    .filter((l) => l.status === "ACTIVE")
-    .map((l) => ({
-      ...listingToPublic(l, baseUrl, { lang }),
-      isFavorite: true,
-    }));
+  const listings = favs.map((f) => f.listing).filter((l) => l.status === "ACTIVE");
+  const items = await mapListingsEnriched(listings, baseUrl, lang, () => ({ isFavorite: true }));
   res.json({ items });
 });
 

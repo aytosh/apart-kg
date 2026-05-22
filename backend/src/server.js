@@ -113,7 +113,12 @@ app.use(
           "stun:",
           "stuns:",
         ],
-        "frame-src": ["'self'", "https://accounts.google.com"],
+        "frame-src": [
+          "'self'",
+          "https://accounts.google.com",
+          "https://www.facebook.com",
+          "https://staticxx.facebook.com",
+        ],
       },
     },
   })

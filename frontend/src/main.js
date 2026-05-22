@@ -15,6 +15,7 @@ import {
   ensureRecaptcha,
   initGoogleSignIn,
   initFacebookSdk,
+  initFacebookAuthUI,
   openAuth,
   closeAuth,
   openAuthResetFromUrl,
@@ -82,10 +83,10 @@ function pickInitialLang() {
 
 async function refreshCurrentViewAfterUiChange() {
   const home = await import("./views/home.js");
-  if (state.view === "home") {
-    home.renderHomeList();
-  } else {
-    home.renderHomeList();
+  const homeSections = await import("./views/homeSections.js");
+  home.renderHomeList();
+  if (state.view === "home" && homeSections.isHomeStreamMode()) {
+    void homeSections.loadHomeSections();
   }
   if (state.view === "favorites") {
     await loadFavorites();
@@ -141,6 +142,7 @@ async function boot() {
   await ensureRecaptcha();
   await initGoogleSignIn();
   await initFacebookSdk();
+  initFacebookAuthUI();
 
   bindRouterEvents();
   bindHomeFilters();
